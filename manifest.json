@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "generated": "2026-11-09T09:09:38Z",
+  "format": 1,
+  "minecraft": "1.21.11",
+  "modsync": {
+    "version": "1.0.0",
+    "minVersion": "1.0.0"
+  },
+  "mods": [
+    {
+      "id": "modsync",
+      "name": "ModSync",
+      "version": "1.0.0",
+      "file": "ModSync-1.0.0.jar",
+      "url": "https://yeamu.my.id/downloads/ModSync-1.0.0.jar",
+      "sha256": "78247cc41bf317372bb46b97bb9ff6834a2f80074f0ce3c95a111af6d17d179b",
+      "size": 61687,
+      "description": "Автообновление модов сервера"
+    },
+    {
+      "id": "fabric-api",
+      "name": "Fabric API",
+      "version": "0.141.6+1.21.11",
+      "file": "fabric-api-0.141.6+1.21.11.jar",
+      "url": "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.141.6+1.21.11/fabric-api-0.141.6+1.21.11.jar",
+      "sha256": "bdff7fd7e220085cfad2ff9b1f40dde6534ae0b96cf378f97a374bc54cb9ed0f",
+      "size": 2426039,
+      "description": "Библиотека, нужная почти всем Fabric-модам"
+    }
+  ],
+  "remove": [],
+  "optional": [],
+  "modsHash": "766bbf7407422018a35869a34fd68196eddaf085ae5f4c024cc358e3ac368e8e"
+}
