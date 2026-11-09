@@ -1,6 +1,6 @@
 {
-  "version": 6,
-  "generated": "2026-11-09T13:47:59Z",
+  "version": 7,
+  "generated": "2026-11-09T14:02:47Z",
   "format": 1,
   "minecraft": "1.21.11",
   "modsync": {
@@ -21,11 +21,11 @@
     {
       "id": "pixelui",
       "name": "PixelUI",
-      "version": "1.1.1",
-      "file": "PixelUI-1.1.1.jar",
-      "url": "https://yeamu.my.id/downloads/PixelUI-1.1.1.jar",
-      "sha256": "8c5d68d034ec5d0e55e2d225be338621c3892ecc8c56ba7c1e6b635a9a9c6d02",
-      "size": 62248,
+      "version": "1.1.2",
+      "file": "PixelUI-1.1.2.jar",
+      "url": "https://yeamu.my.id/downloads/PixelUI-1.1.2.jar",
+      "sha256": "88142b570003dbd373b1a8a04e9f18320cef77ac5933aa58cbaa6faa2b9ec68c",
+      "size": 71674,
       "description": "Кастомные пиксельные уведомления, плашки и меню"
     },
     {
@@ -48,8 +48,11 @@
     },
     {
       "file": "PixelUI-1.1.0.jar"
+    },
+    {
+      "file": "PixelUI-1.1.1.jar"
     }
   ],
   "optional": [],
-  "modsHash": "5bf6066da6c281658f9e85ae26a3a14189e4b6b77d6e2ac551a38e5c9c8dbfb7"
+  "modsHash": "9870435882aa44beefe0f3fd1752792af0f129dc0c71a60ec932634f0555129c"
 }
