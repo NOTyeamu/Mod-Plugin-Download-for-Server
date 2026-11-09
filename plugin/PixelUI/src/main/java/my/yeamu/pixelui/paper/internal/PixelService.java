@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import my.yeamu.pixelui.paper.PixelUIPlugin;
 import my.yeamu.pixelui.paper.api.PixelAnswer;
 import my.yeamu.pixelui.paper.api.PixelBanner;
+import my.yeamu.pixelui.paper.api.PixelInput;
 import my.yeamu.pixelui.paper.api.PixelPrompt;
 import my.yeamu.pixelui.paper.api.event.PixelPromptAnswerEvent;
 import org.bukkit.scheduler.BukkitTask;
@@ -27,6 +28,7 @@ import org.bukkit.entity.Player;
 
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,6 +59,8 @@ public final class PixelService {
     private final Map<UUID, OpenMenu> menus = new ConcurrentHashMap<>();
     private final Map<UUID, Map<String, BarState>> bars = new ConcurrentHashMap<>();
     private final Map<UUID, Map<String, PromptState>> prompts = new ConcurrentHashMap<>();
+    /** Открытое окно ввода (одно на игрока). */
+    private final Map<UUID, PixelInput> inputs = new ConcurrentHashMap<>();
 
     /** Активный вопрос: token защищает чат-кнопки, timer — серверный тайм-аут. */
     private static final class PromptState {
@@ -459,6 +463,83 @@ public final class PixelService {
         }
     }
 
+    // ---------------------------------------------------------------- окна ввода
+
+    /** Показать окно ввода. false — у игрока нет мода (запасного варианта у ввода нет). */
+    public boolean input(Player p, PixelInput in) {
+        if (!p.isOnline() || !hasMod(p)) return false;
+        sync(() -> {
+            if (!p.isOnline()) return;
+            inputs.put(p.getUniqueId(), in); // старое окно клиент заменит сам (без input_closed)
+            send(p, in.toJson());
+        });
+        return true;
+    }
+
+    public boolean hasInput(Player p, String id) {
+        PixelInput in = inputs.get(p.getUniqueId());
+        return in != null && (id == null || in.id().equals(id));
+    }
+
+    /** Показать ошибку в открытом окне и снова разрешить отправку. */
+    public void inputError(Player p, String id, String error, boolean clearPasswords) {
+        sync(() -> {
+            if (!hasInput(p, id)) return;
+            JsonObject o = new JsonObject();
+            o.addProperty("type", "input_error");
+            o.addProperty("id", inputs.get(p.getUniqueId()).id());
+            o.addProperty("error", error == null ? "" : error);
+            o.addProperty("clear", clearPasswords);
+            send(p, o);
+        });
+    }
+
+    /** Закрыть окно ввода (обработчики не вызываются). id = null — любое. */
+    public void closeInput(Player p, String id) {
+        sync(() -> {
+            PixelInput in = inputs.get(p.getUniqueId());
+            if (in == null || (id != null && !in.id().equals(id))) return;
+            inputs.remove(p.getUniqueId(), in);
+            JsonObject o = new JsonObject();
+            o.addProperty("type", "input_close");
+            o.addProperty("id", in.id());
+            send(p, o);
+        });
+    }
+
+    private void inputPacket(Player p, String type, JsonObject o) {
+        PixelInput in = inputs.get(p.getUniqueId());
+        if (in == null || !o.has("id") || !in.id().equals(o.get("id").getAsString())) return;
+        try {
+            switch (type) {
+                case "input_submit" -> {
+                    List<String> values = new ArrayList<>();
+                    if (o.has("values") && o.get("values").isJsonArray()) {
+                        for (var e : o.getAsJsonArray("values")) {
+                            if (values.size() >= in.fields().size()) break;
+                            String v = e.isJsonNull() ? "" : e.getAsString();
+                            int max = in.fields().get(values.size()).maxLength();
+                            values.add(v.length() > max ? v.substring(0, max) : v); // не доверяем клиенту
+                        }
+                    }
+                    while (values.size() < in.fields().size()) values.add("");
+                    if (in.closeOnSubmit()) inputs.remove(p.getUniqueId(), in);
+                    if (in.onSubmit() != null) in.onSubmit().accept(p, List.copyOf(values));
+                }
+                case "input_cancel" -> {
+                    inputs.remove(p.getUniqueId(), in);
+                    if (in.onCancel() != null) in.onCancel().accept(p);
+                }
+                default -> { // input_closed
+                    inputs.remove(p.getUniqueId(), in);
+                    if (in.onClose() != null) in.onClose().accept(p);
+                }
+            }
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.WARNING, "Ошибка в обработчике окна ввода " + in.id(), e);
+        }
+    }
+
     // ---------------------------------------------------------------- пакеты от клиента
 
     /** Вызывается в главном потоке. */
@@ -485,6 +566,7 @@ public final class PixelService {
                     menus.remove(p.getUniqueId(), m);
                     fireClose(p, m.menu(), PixelMenuCloseEvent.Reason.PLAYER);
                 }
+                case "input_submit", "input_cancel", "input_closed" -> inputPacket(p, type, o);
                 case "answer" -> {
                     Map<String, PromptState> map = prompts.get(p.getUniqueId());
                     if (map == null) return;
@@ -507,6 +589,7 @@ public final class PixelService {
         if (m != null) fireClose(p, m.menu(), PixelMenuCloseEvent.Reason.QUIT);
         cancelAllPrompts(p);
         prompts.remove(p.getUniqueId());
+        inputs.remove(p.getUniqueId());
         versions.remove(p.getUniqueId());
         bars.remove(p.getUniqueId());
     }
@@ -517,7 +600,9 @@ public final class PixelService {
             if (menus.containsKey(p.getUniqueId())) closeMenu(p);
             cancelOnClient(p, null);
             cancelAllPrompts(p);
+            if (inputs.containsKey(p.getUniqueId())) closeInput(p, null);
         }
+        inputs.clear();
         prompts.clear();
         menus.clear();
         bars.clear();

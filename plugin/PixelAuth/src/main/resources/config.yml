@@ -1,0 +1,152 @@
+# =====================================================================
+#  PixelAuth — авторизация на сервере (замена AuthMe)
+#  Игроки с модом PixelUI видят пиксельное окно входа, остальные — чат,
+#  титры и боссбар с таймером.
+#  Переезд с AuthMe: поставьте PixelAuth, выполните /pixelauth import-authme,
+#  затем удалите AuthMe и перезапустите сервер.
+# =====================================================================
+
+storage:
+  # sqlite (файл plugins/PixelAuth/data.db) или mysql
+  type: sqlite
+  mysql:
+    host: localhost
+    port: 3306
+    database: minecraft
+    user: root
+    password: ''
+    params: 'useSSL=false&characterEncoding=utf8&serverTimezone=UTC'
+
+login:
+  # Сколько секунд даётся на вход/регистрацию, потом кик
+  timeout-seconds: 60
+  # Неверных паролей до кика
+  max-attempts: 5
+  # Сколько тиков ждать, пока мод PixelUI поздоровается (20 тиков = 1 с)
+  ui-delay-ticks: 20
+  # Напоминание в чате для игроков без мода, секунды
+  reminder-seconds: 10
+
+session:
+  # Автовход, если игрок зашёл с того же IP в течение N минут после выхода
+  enabled: true
+  minutes: 30
+
+register:
+  max-accounts-per-ip: 3
+  password-min: 6
+  password-max: 64
+  # Слишком простые пароли (сравнение без учёта регистра)
+  unsafe-passwords: ['123456', '1234567', '12345678', '123456789', 'password', 'qwerty', 'qwerty123',
+                     '111111', '123123', '000000', '1q2w3e4r', 'minecraft', 'parol', '654321']
+
+# Защита от перебора: после N киков за неверный пароль IP блокируется на M минут
+ip-block:
+  kicks: 3
+  minutes: 10
+
+names:
+  # Допустимые ники
+  regex: '^[A-Za-z0-9_]{3,16}$'
+  # Не пускать «Steve», если зарегистрирован «steve» (защита от подмены ника)
+  case-sensitive: true
+
+# Ограничения до входа: нельзя ходить, писать, ломать, получать урон и т.д.
+limbo:
+  blindness: true
+  # Скрыть неавторизованного игрока от остальных
+  hide-player: true
+  # Держать на спавне мира до входа (потом вернём на место)
+  teleport-to-spawn: false
+  allowed-commands: [login, l, log, register, reg]
+
+bedrock:
+  # Игроки Geyser/Floodgate входят автоматически (их уже проверил Xbox Live)
+  auto-login: true
+  prefix: '.'
+
+hash:
+  # Итерации PBKDF2-SHA256: больше — надёжнее, но медленнее (считается вне главного потока)
+  iterations: 120000
+
+security:
+  # Не писать в консоль «Игрок issued server command: /login пароль»
+  hide-commands-in-console: true
+
+compat:
+  # Если рядом стоит AuthMe — PixelAuth не блокирует игроков (чтобы не было двойного входа),
+  # работает только /pixelauth (для импорта)
+  passive-if-authme: true
+
+log:
+  # Лог входов в plugins/PixelAuth/logins.log
+  enabled: true
+
+messages:
+  prefix: '&8[&a■&8] &7'
+  login-chat: '&7Войдите в аккаунт: &e/login <пароль>'
+  register-chat: '&7Зарегистрируйтесь: &e/register <пароль> <пароль>'
+  click-hint: '&a&l[Нажмите, чтобы ввести]'
+  login-title: '&a&lВХОД'
+  login-subtitle: '&7/login <пароль>'
+  register-title: '&6&lРЕГИСТРАЦИЯ'
+  register-subtitle: '&7/register <пароль> <пароль>'
+  bossbar: '&fВремя на вход: &e{time} с'
+  mod-hint: '&8С модом PixelUI вход — в красивом окне: &7yeamu.my.id'
+  wrong-password: '&cНеверный пароль! Осталось попыток: &e{attempts}'
+  login-success-title: '&aВы вошли!'
+  login-success: '&7Приятной игры, &e{name}&7.'
+  session-login: '&7Вход по сессии — с возвращением, &e{name}&7!'
+  bedrock-login: '&7Вход через Bedrock — приятной игры, &e{name}&7!'
+  register-success-title: '&6Аккаунт создан!'
+  register-success: '&7Запомните пароль — он понадобится при входе.'
+  already-logged: '&cВы уже вошли.'
+  not-registered: '&cВы ещё не зарегистрированы: &e/register <пароль> <пароль>'
+  already-registered: '&cВы уже зарегистрированы: &e/login <пароль>'
+  login-usage: '&cИспользование: /login <пароль>'
+  register-usage: '&cИспользование: /register <пароль> <пароль>'
+  passwords-mismatch: '&cПароли не совпадают.'
+  password-short: '&cПароль слишком короткий (минимум {min}).'
+  password-long: '&cПароль слишком длинный (максимум {max}).'
+  password-name: '&cПароль не должен совпадать с ником.'
+  password-unsafe: '&cЭтот пароль слишком простой — придумайте другой.'
+  password-spaces: '&cПароль не должен содержать пробелы.'
+  password-same: '&cНовый пароль совпадает со старым.'
+  ip-limit: '&cС вашего IP уже слишком много аккаунтов (максимум {max}).'
+  need-auth: '&cСначала войдите в аккаунт.'
+  logout-success: '&eВы вышли из аккаунта.'
+  changepass-success: '&aПароль изменён.'
+  changepass-usage: '&cИспользование: /changepassword <старый> <новый>'
+  wrong-old-password: '&cТекущий пароль неверный.'
+  unsupported-hash: '&cПароль хранится в неподдерживаемом формате. Попросите администрацию сбросить пароль.'
+  storage-error: '&cОшибка базы данных, попробуйте ещё раз.'
+  kick-timeout: '&cВремя на вход вышло.\n&7Зайдите снова и введите пароль.'
+  kick-attempts: '&cСлишком много неверных паролей.'
+  kick-quit: '&7Вы вышли с экрана входа. До встречи!'
+  kick-ip-blocked: '&cСлишком много неудачных входов с вашего IP.\n&7Попробуйте через &e{min} мин.'
+  kick-name-invalid: '&cНедопустимый ник.\n&7Разрешены латиница, цифры и _, от 3 до 16 символов.'
+  kick-name-case: '&cЭтот ник зарегистрирован как &e{real}&c.\n&7Зайдите с правильными большими/маленькими буквами.'
+  kick-already-online: '&cИгрок с таким ником уже на сервере.'
+  kick-unregistered: '&eАккаунт удалён администрацией. Зайдите снова, чтобы зарегистрироваться.'
+
+  # ---- Тексты пиксельных окон (PixelUI)
+  ui-login-title: '&a&lВход на сервер'
+  ui-login-lines:
+    - 'С возвращением, &e{name}&r!'
+    - '&7Введите пароль от аккаунта.'
+  ui-register-title: '&6&lРегистрация'
+  ui-register-lines:
+    - 'Добро пожаловать, &e{name}&r!'
+    - '&7Придумайте пароль — он понадобится'
+    - '&7при каждом входе на сервер.'
+  ui-change-title: '&b&lСмена пароля'
+  ui-password: 'Пароль'
+  ui-repeat: 'Повторите пароль'
+  ui-old-password: 'Текущий пароль'
+  ui-new-password: 'Новый пароль'
+  ui-placeholder: 'введите пароль…'
+  ui-login-button: 'Войти'
+  ui-register-button: 'Создать аккаунт'
+  ui-change-button: 'Сменить'
+  ui-quit-button: 'Выйти'
+  ui-cancel-button: 'Отмена'

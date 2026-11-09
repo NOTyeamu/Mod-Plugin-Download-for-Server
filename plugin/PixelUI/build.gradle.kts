@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "my.yeamu"
-version = "1.1.2"
+version = "1.1.3"
 
 repositories {
     mavenCentral()
@@ -12,7 +12,7 @@ repositories {
 }
 
 dependencies {
-    // Paper API 1.21.11 (поставляется сервером, в jar не упаковываем)
+    // Paper API 1.21.11 (поставляется серверо��, в jar не упаковываем)
     compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
 }
 

@@ -8,6 +8,7 @@
 | ModGate | `plugin/ModGate` | Плагин Paper 1.21.11: требует клиентский мод |
 | ModSync | `mod/ModSync` | Fabric-мод 1.21.11: ставит и обновляет моды сервера |
 | PluginSync | `plugin/PluginSync` | Плагин Paper 1.21.11: сам обновляет и ставит плагины сервера (и себя) |
+| PixelAuth | `plugin/PixelAuth` | Авторизация с пиксельными окнами PixelUI (замена AuthMe), см. `docs/PixelAuth.md` |
 | Список плагинов | `manifest-source.json` (`plugins`) → `plugins.json` + `.sig` | Подписан Ed25519 тем же ключом |
 | Манифест | `manifest-source.json` → `manifest.json` + `.sig` | Список модов, подписанный Ed25519 |
 | Утилита | `tools/manifest.py` | keygen / build / sign / verify |

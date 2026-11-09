@@ -86,6 +86,32 @@ public final class PixelUI {
     }
 
     /** Убрать все уведомления, плашки и вопросы игрока. */
+    /**
+     * Открыть окно ввода (пароль, имя, код…). Работает только с модом:
+     * false — мода нет, ничего не показано.
+     */
+    public static boolean input(Player player, PixelInput input) {
+        return PixelUIPlugin.get().service().input(player, input);
+    }
+
+    /** Показать ошибку в окне ввода (окно трясётся, поля-пароли очищаются). */
+    public static void inputError(Player player, String id, String error) {
+        PixelUIPlugin.get().service().inputError(player, id, error, true);
+    }
+
+    public static void inputError(Player player, String id, String error, boolean clearPasswords) {
+        PixelUIPlugin.get().service().inputError(player, id, error, clearPasswords);
+    }
+
+    /** Закрыть окно ввода. id = null — любое открытое. */
+    public static void closeInput(Player player, String id) {
+        PixelUIPlugin.get().service().closeInput(player, id);
+    }
+
+    public static boolean hasInput(Player player, String id) {
+        return PixelUIPlugin.get().service().hasInput(player, id);
+    }
+
     public static void clear(Player player) {
         PixelUIPlugin.get().service().clear(player);
     }

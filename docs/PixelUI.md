@@ -123,6 +123,28 @@ PixelUI.cancelPrompt("mymod-confirm");
 PixelUI.hasPrompt();
 ```
 
+## Плагин: окна ввода (формы)
+
+До 5 полей (текст или пароль), таймер, текст ошибки, кнопки «Готово»/«Отмена». Именно им пользуется PixelAuth.
+
+```java
+PixelInput form = PixelInput.builder("myplugin-promo")
+        .title("Промокод")
+        .line("Введите код из Discord")
+        .icon(PixelIcon.GIFT).theme(PixelTheme.GOLD)
+        .field(PixelInput.Field.text("Код").placeholder("ABCD-1234").maxLength(16))
+        .submit("Активировать").cancel("Отмена")
+        .closeOnSubmit(false)          // закрыть сами, когда проверим
+        .onSubmit((player, values) -> {
+            if (!valid(values.get(0))) PixelUI.inputError(player, "myplugin-promo", "Неверный код");
+            else PixelUI.closeInput(player, "myplugin-promo");
+        })
+        .build();
+if (!PixelUI.input(player, form)) { /* у игрока нет мода — спросите в чате */ }
+```
+
+`Field.password(...)` прячет символы; `closeable(false)` — окно не закрывается по Esc; `timer(60)` — обратный отсчёт.
+
 ## Справочник
 
 - Темы: `dark, stone, success, error, warning, info, gold, ender, nether`; свои цвета: `accent, bg, outline, light, dark, title, text` (0xRRGGBB или 0xAARRGGBB), `shadow(bool)`.

@@ -1,14 +1,17 @@
 package my.yeamu.pixelui.net;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import my.yeamu.pixelui.PixelUIClient;
 import my.yeamu.pixelui.api.Banner;
+import my.yeamu.pixelui.api.InputForm;
 import my.yeamu.pixelui.api.Menu;
 import my.yeamu.pixelui.api.Notification;
 import my.yeamu.pixelui.hud.PixelHud;
 import my.yeamu.pixelui.hud.PromptHud;
 import my.yeamu.pixelui.api.Prompt;
+import my.yeamu.pixelui.screen.InputScreen;
 import my.yeamu.pixelui.screen.MenuScreen;
 import net.fabricmc.fabric.api.client.networking.v1.C2SPlayChannelEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
@@ -19,8 +22,10 @@ import net.minecraft.client.MinecraftClient;
 /**
  * Сеть PixelUI: принимаем команды от плагина и отсылаем нажатия.
  *
- * Сервер → клиент: notify, banner, banner_remove, menu, menu_close, prompt, prompt_cancel, clear.
- * Клиент → сервер: hello {version}, click {menu, button}, close {menu}, answer {id, answer}.
+ * Сервер → клиент: notify, banner, banner_remove, menu, menu_close, prompt, prompt_cancel, clear,
+ *                  input, input_error, input_close.
+ * Клиент → сервер: hello {version}, click {menu, button}, close {menu}, answer {id, answer},
+ *                  input_submit {id, values}, input_cancel {id}, input_closed {id}.
  */
 public final class PixelNet {
 
@@ -88,6 +93,31 @@ public final class PixelNet {
         send(o);
     }
 
+    /** Отправить серверу введённое в окно (в лог не пишем — там может быть пароль). */
+    public static void sendInputSubmit(String id, java.util.List<String> values) {
+        JsonObject o = new JsonObject();
+        o.addProperty("type", "input_submit");
+        o.addProperty("id", id);
+        JsonArray arr = new JsonArray();
+        for (String v : values) arr.add(v);
+        o.add("values", arr);
+        send(o);
+    }
+
+    public static void sendInputCancel(String id) {
+        JsonObject o = new JsonObject();
+        o.addProperty("type", "input_cancel");
+        o.addProperty("id", id);
+        send(o);
+    }
+
+    public static void sendInputClosed(String id) {
+        JsonObject o = new JsonObject();
+        o.addProperty("type", "input_closed");
+        o.addProperty("id", id);
+        send(o);
+    }
+
     private static void send(JsonObject o) {
         if (ClientPlayNetworking.canSend(PixelPayload.ID)) {
             ClientPlayNetworking.send(new PixelPayload(o.toString()));
@@ -128,6 +158,28 @@ public final class PixelNet {
                     if (client.currentScreen instanceof MenuScreen ms && ms.fromServer
                             && (!o.has("id") || ms.menu().id.equals(o.get("id").getAsString()))) {
                         ms.closeSilently();
+                    }
+                }
+                case "input" -> {
+                    InputForm f = InputForm.fromJson(o);
+                    if (client.currentScreen instanceof InputScreen old) old.markReplaced();
+                    if (client.currentScreen instanceof MenuScreen old) old.markReplaced();
+                    client.setScreen(new InputScreen(f, true,
+                            v -> sendInputSubmit(f.id, v),
+                            () -> sendInputCancel(f.id),
+                            () -> sendInputClosed(f.id)));
+                }
+                case "input_error" -> {
+                    if (client.currentScreen instanceof InputScreen is && is.fromServer
+                            && (!o.has("id") || is.form().id.equals(o.get("id").getAsString()))) {
+                        is.setError(o.has("error") ? o.get("error").getAsString() : "",
+                                !o.has("clear") || o.get("clear").getAsBoolean());
+                    }
+                }
+                case "input_close" -> {
+                    if (client.currentScreen instanceof InputScreen is && is.fromServer
+                            && (!o.has("id") || is.form().id.equals(o.get("id").getAsString()))) {
+                        is.closeSilently();
                     }
                 }
                 default -> PixelUIClient.LOG.debug("PixelUI: неизвестный тип пакета {}", type);

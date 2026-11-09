@@ -5,7 +5,7 @@
 
   python tools/manifest.py keygen            — создать пару ключей Ed25519
   python tools/manifest.py build             — собрать manifest.json (моды) и plugins.json (плагины)
-  python tools/manifest.py sign              — подписать оба (ключ в переменной MANIFEST_PRIVATE_KEY)
+  python tools/manifest.py sign              — подписать оба (ключ в п��ременной MANIFEST_PRIVATE_KEY)
   python tools/manifest.py verify            — проверить подписи публичным ключом
 
 Ключи: приватный — Base64 PKCS#8 DER, публичный — Base64 X.509 DER
@@ -69,6 +69,7 @@ def subst_all():
         "modgate": gradle_kts_version("plugin/ModGate"),
         "pixelui_paper": gradle_kts_version("plugin/PixelUI"),
         "pluginsync": gradle_kts_version("plugin/PluginSync"),
+        "pixelauth": gradle_kts_version("plugin/PixelAuth"),
     }
 
 

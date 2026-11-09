@@ -1,4 +1,4 @@
-name: Сборка ModGate, ModSync, PixelUI и PluginSync
+name: Сборка ModGate, ModSync, PixelUI, PluginSync и PixelAuth
 
 on:
   push:
@@ -59,6 +59,11 @@ jobs:
           JAVA_HOME: ${{ env.JAVA_HOME_21_X64 }}
         run: gradle -p plugin/PixelUI build --no-daemon --stacktrace
 
+      - name: Сборка плагина PixelAuth
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME_21_X64 }}
+        run: gradle -p plugin/PixelAuth build --no-daemon --stacktrace
+
       - name: Сборка плагина PluginSync
         env:
           JAVA_HOME: ${{ env.JAVA_HOME_21_X64 }}
@@ -67,7 +72,7 @@ jobs:
       - name: Копирую jar в downloads/
         run: |
           mkdir -p downloads
-          rm -f downloads/ModGate-*.jar downloads/ModSync-*.jar downloads/PixelUI-*.jar downloads/PluginSync-*.jar
+          rm -f downloads/ModGate-*.jar downloads/ModSync-*.jar downloads/PixelUI-*.jar downloads/PluginSync-*.jar downloads/PixelAuth-*.jar
           cp plugin/ModGate/build/libs/ModGate-*.jar downloads/
           for f in mod/ModSync/build/libs/ModSync-*.jar; do
             case "$f" in *-sources.jar|*-dev.jar) ;; *) cp "$f" downloads/ ;; esac
@@ -77,6 +82,7 @@ jobs:
           done
           if [ -d plugin/PixelUI/build/libs ]; then cp plugin/PixelUI/build/libs/PixelUI-Paper-*.jar downloads/; fi
           cp plugin/PluginSync/build/libs/PluginSync-*.jar downloads/
+          cp plugin/PixelAuth/build/libs/PixelAuth-*.jar downloads/
           ls -la downloads
 
       - uses: actions/upload-artifact@v4

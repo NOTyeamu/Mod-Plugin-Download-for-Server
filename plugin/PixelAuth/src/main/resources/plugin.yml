@@ -1,0 +1,36 @@
+name: PixelAuth
+version: '${version}'
+main: my.yeamu.pixelauth.PixelAuthPlugin
+api-version: '1.21'
+author: yeamu
+description: Авторизация на сервере (замена AuthMe) с пиксельными окнами входа PixelUI.
+website: https://yeamu.my.id
+softdepend: [PixelUI, AuthMe, floodgate]
+commands:
+  login:
+    description: Войти в аккаунт
+    usage: /login <пароль>
+    aliases: [l, log]
+  register:
+    description: Зарегистрироваться
+    usage: /register <пароль> <пароль>
+    aliases: [reg]
+  logout:
+    description: Выйти из аккаунта
+    usage: /logout
+  changepassword:
+    description: Сменить пароль
+    usage: /changepassword <старый> <новый>
+    aliases: [changepass, cp]
+  pixelauth:
+    description: Управление PixelAuth
+    usage: /pixelauth <register|unregister|changepass|forcelogin|info|import-authme|stats|reload>
+    aliases: [pauth]
+    permission: pixelauth.admin
+permissions:
+  pixelauth.admin:
+    description: Доступ к /pixelauth
+    default: op
+  pixelauth.unlimited:
+    description: Без лимита аккаунтов на один IP
+    default: false
