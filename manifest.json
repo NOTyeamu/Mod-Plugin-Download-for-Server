@@ -1,31 +1,31 @@
 {
-  "version": 5,
-  "generated": "2026-11-09T13:17:27Z",
+  "version": 6,
+  "generated": "2026-11-09T13:47:59Z",
   "format": 1,
   "minecraft": "1.21.11",
   "modsync": {
-    "version": "1.1.0",
-    "minVersion": "1.1.0"
+    "version": "1.1.1",
+    "minVersion": "1.1.1"
   },
   "mods": [
     {
       "id": "modsync",
       "name": "ModSync",
-      "version": "1.1.0",
-      "file": "ModSync-1.1.0.jar",
-      "url": "https://yeamu.my.id/downloads/ModSync-1.1.0.jar",
-      "sha256": "341edee024f0ee8dcc98b862c2187300f45a797ad9b4f16636666d075a17d899",
-      "size": 74355,
+      "version": "1.1.1",
+      "file": "ModSync-1.1.1.jar",
+      "url": "https://yeamu.my.id/downloads/ModSync-1.1.1.jar",
+      "sha256": "94dcc8ef664857acd813177d5e3b2440233de47dc01e022ed5695029c5357c3e",
+      "size": 79169,
       "description": "Автообновление модов сервера"
     },
     {
       "id": "pixelui",
       "name": "PixelUI",
-      "version": "1.1.0",
-      "file": "PixelUI-1.1.0.jar",
-      "url": "https://yeamu.my.id/downloads/PixelUI-1.1.0.jar",
-      "sha256": "7eebff53c54d218a5a38920ea2fe2b3e65fa1990ea8c8f4379e5f821f3c0959b",
-      "size": 61966,
+      "version": "1.1.1",
+      "file": "PixelUI-1.1.1.jar",
+      "url": "https://yeamu.my.id/downloads/PixelUI-1.1.1.jar",
+      "sha256": "8c5d68d034ec5d0e55e2d225be338621c3892ecc8c56ba7c1e6b635a9a9c6d02",
+      "size": 62248,
       "description": "Кастомные пиксельные уведомления, плашки и меню"
     },
     {
@@ -42,8 +42,14 @@
   "remove": [
     {
       "file": "ModSync-1.0.0.jar"
+    },
+    {
+      "file": "ModSync-1.1.0.jar"
+    },
+    {
+      "file": "PixelUI-1.1.0.jar"
     }
   ],
   "optional": [],
-  "modsHash": "d6859bfa8071e58557e31c8ddf47a85704d4ec396f87233237543d0ed6176172"
+  "modsHash": "5bf6066da6c281658f9e85ae26a3a14189e4b6b77d6e2ac551a38e5c9c8dbfb7"
 }
