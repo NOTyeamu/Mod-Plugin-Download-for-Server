@@ -42,6 +42,12 @@ public final class Msg {
         p.sendMessage(color(raw("prefix") + raw(key, pairs)));
     }
 
+    /** Как send, но со своим текстом, если ключа нет в config.yml (старые конфиги). */
+    public void sendOr(Player p, String key, String def, Object... pairs) {
+        String s = cfg.getString("messages." + key);
+        p.sendMessage(color(raw("prefix") + fill(s == null ? def : s, pairs)));
+    }
+
     private static String fill(String s, Object... pairs) {
         if (s == null) return "";
         for (int i = 0; i + 1 < pairs.length; i += 2) {

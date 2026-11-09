@@ -35,6 +35,7 @@ BCrypt не поддерживается — таким аккаунтам ну�
 | `/register <пароль> <пароль>` (`/reg`) | Регистрация |
 | `/login <пароль>` (`/l`, `/log`) | Вход |
 | `/logout` | Выход из аккаунта |
+| `/endsession` (`/nosession`) | Завершить сессию: остаётесь в игре, но при следующем входе спросят пароль |
 | `/changepassword [старый новый]` (`/cp`) | Смена пароля (без аргументов — пиксельное окно) |
 | `/pixelauth register\|unregister\|changepass\|forcelogin\|info\|import-authme\|stats\|reload` | Админка (`pixelauth.admin`) |
 

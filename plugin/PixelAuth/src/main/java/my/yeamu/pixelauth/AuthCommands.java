@@ -7,7 +7,7 @@ import org.bukkit.entity.Player;
 
 import java.util.List;
 
-/** /login, /register, /logout, /changepassword. Таб-дополнение пустое — чтобы не подсказывать ники. */
+/** /login, /register, /logout, /endsession, /changepassword. Таб-дополнение пустое — чтобы не подсказывать ники. */
 final class AuthCommands implements TabExecutor {
 
     private final PixelAuthPlugin plugin;
@@ -43,6 +43,7 @@ final class AuthCommands implements TabExecutor {
                 auth.attemptRegister(p, args[0], args[1]);
             }
             case "logout" -> auth.logout(p);
+            case "endsession" -> auth.endSession(p);
             case "forgotpassword" -> auth.requestReset(p);
             case "changepassword" -> {
                 if (args.length < 2) {

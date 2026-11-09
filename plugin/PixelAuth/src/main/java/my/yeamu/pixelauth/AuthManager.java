@@ -49,6 +49,7 @@ public final class AuthManager {
         BukkitTask timeoutTask, tickTask;
         BossBar bar;
         Limbo limbo;
+        volatile boolean noSession; // /endsession: не сохранять сессию при выходе
 
         State(UUID uuid, String name, String ip) {
             this.uuid = uuid;
@@ -473,6 +474,34 @@ public final class AuthManager {
         afterLoad(p, st);
     }
 
+    /**
+     * /endsession: завершить сессию, но остаться в игре.
+     * Автовход по IP больше не сработает — при следующем входе спросим пароль.
+     */
+    public void endSession(Player p) {
+        State st = states.get(p.getUniqueId());
+        if (st == null || !st.authed) {
+            msg().send(p, "need-auth");
+            return;
+        }
+        if (st.account == null) {
+            msg().sendOr(p, "session-none", "&7У вас нет сессии — Bedrock-игроки входят автоматически.");
+            return;
+        }
+        st.noSession = true; // и при выходе из игры сессию не создаём
+        Account a = st.account;
+        st.account = a.withLogin(a.lastIp(), 0, null);
+        db(() -> {
+            try {
+                plugin.storage().updateLogin(a.name(), a.lastIp(), 0, null);
+            } catch (SQLException ex) {
+                plugin.getLogger().log(Level.WARNING, "Ошибка базы при завершении сессии " + a.name(), ex);
+            }
+        });
+        plugin.loginLog().write(st.name, st.ip, "SESSION_END", "");
+        msg().sendOr(p, "session-ended", "&eСессия завершена. При следующем входе нужно будет ввести пароль.");
+    }
+
     /** Кнопка «Выйти» в окне входа. */
     void quitFromScreen(Player p) {
         State st = states.get(p.getUniqueId());
@@ -637,7 +666,7 @@ public final class AuthManager {
         return true;
     }
 
-    /** Аккаунт удалён админом: ��сли игрок онлайн — кикаем, при следующем входе он зарегистрируется заново. */
+    /** Аккаунт удалён админом: если игрок онлайн — кикаем, при следующем входе он зарегистрируется заново. */
     void accountDeleted(String name) {
         Player p = Bukkit.getPlayerExact(name);
         if (p != null && states.containsKey(p.getUniqueId())) p.kick(msg().comp("kick-unregistered"));
@@ -729,7 +758,7 @@ public final class AuthManager {
             st.limbo = null;
         }
         Account a = st.account;
-        if (st.authed && a != null && s().sessionEnabled) {
+        if (st.authed && a != null && s().sessionEnabled && !st.noSession) {
             // сессия считается от момента выхода
             long now = System.currentTimeMillis();
             db(() -> {

@@ -18,6 +18,10 @@ commands:
   logout:
     description: Выйти из аккаунта
     usage: /logout
+  endsession:
+    description: Завершить сессию (в следующий раз спросить пароль)
+    usage: /endsession
+    aliases: [nosession]
   changepassword:
     description: Сменить пароль
     usage: /changepassword <старый> <новый>
