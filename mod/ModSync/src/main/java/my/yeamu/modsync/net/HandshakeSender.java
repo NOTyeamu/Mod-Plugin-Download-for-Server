@@ -10,6 +10,8 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.toast.SystemToast;
+import net.minecraft.text.Text;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -51,8 +53,22 @@ public final class HandshakeSender {
             }
         });
 
-        // При входе на сервер
-        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> sendAsync(client));
+        // При входе на сервер: рукопожатие сразу, а параллельно тихо перепроверяем сайт —
+        // сборка могла обновиться, пока игра была запущена
+        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+            sendAsync(client);
+            UpdateManager um = UpdateManager.get();
+            if (System.currentTimeMillis() - um.lastCheckAt() > 60_000) {
+                um.startQuietCheck(() -> client.execute(() -> {
+                    // Файлы на диске уже новые — сообщаем серверу свежие данные, чтобы он снял отказ
+                    lastSent = 0;
+                    sendAsync(client);
+                    SystemToast.add(client.getToastManager(), SystemToast.Type.PERIODIC_NOTIFICATION,
+                            Text.literal("ModSync: моды обновлены"),
+                            Text.literal("Перезапустите игру, чтобы они заработали"));
+                }));
+            }
+        });
         // Сервер объявил, что слушает наш канал
         C2SPlayChannelEvents.REGISTER.register((handler, sender, client, channels) -> {
             if (channels.contains(HandshakePayload.CHANNEL)) {

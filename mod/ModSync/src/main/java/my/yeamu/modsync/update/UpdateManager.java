@@ -52,7 +52,7 @@ import java.util.stream.Stream;
  *
  * Порядок: скачать манифест и подпись → проверить Ed25519 → составить план →
  * скачать всё во временную папку с проверкой SHA-256 → одной транзакцией
- * заменить файлы в mods/ (с резервной копией и откатом при ошибке).
+ * заменить ��айлы в mods/ (с резервной копией и откатом при ошибке).
  */
 public final class UpdateManager {
 
@@ -117,6 +117,37 @@ public final class UpdateManager {
     private UpdateManager() {}
 
     // ------------------------------------------------------------------ публичное API
+
+    /** Когда последний раз проверяли сайт (мс). */
+    private volatile long lastCheckAt;
+
+    public long lastCheckAt() { return lastCheckAt; }
+
+    /**
+     * Тихая проверка при входе на сервер: без экрана загрузки. Если моды обновились,
+     * в конце вызывается onChanged (в фоновом потоке).
+     */
+    public void startQuietCheck(Runnable onChanged) {
+        if (!running.compareAndSet(false, true)) return;
+        phase = Phase.FETCHING;
+        detail = "";
+        SyncLog.info("Тихая проверка обновлений при входе на сервер");
+        worker.execute(() -> {
+            try {
+                runCheck();
+            } catch (Throwable t) {
+                SyncLog.error("Непредвиденная ошибка тихой проверки", t);
+                phase = Phase.FAILED;
+                detail = t.getClass().getSimpleName() + ": " + t.getMessage();
+            } finally {
+                running.set(false);
+                cleanupTmp();
+            }
+            if (phase == Phase.RESTART_REQUIRED && changedCount > 0 && onChanged != null) {
+                try { onChanged.run(); } catch (Throwable t) { SyncLog.error("Ошибка после тихого обновления", t); }
+            }
+        });
+    }
 
     /** Запускает проверку в фоне (если уже идёт — ничего не делает). */
     public void startCheck() {
@@ -198,6 +229,7 @@ public final class UpdateManager {
         filesDone = filesTotal = changedCount = 0;
         currentFile = "";
         hadPending = false;
+        lastCheckAt = System.currentTimeMillis();
 
         // 1. Манифест и подпись
         byte[] manifestBytes;
@@ -317,7 +349,7 @@ public final class UpdateManager {
                 downloads.add(m);
                 newInstalled.put(m.id(), m.file());
             }
-            // Старая версия этого же мода, которую ставили мы, под другим именем
+            // Старая вер��ия этого же мода, которую ставили мы, под другим именем
             String old = installed.get(m.id());
             if (old != null && !old.equalsIgnoreCase(newInstalled.get(m.id()))) {
                 Path oldPath = modsDir.resolve(old).normalize();

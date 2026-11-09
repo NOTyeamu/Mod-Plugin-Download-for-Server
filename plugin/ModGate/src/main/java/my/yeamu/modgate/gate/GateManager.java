@@ -128,14 +128,54 @@ public final class GateManager implements Listener {
         if (state == null) return;
         state.handshake = data;
         if (!isChecked(state)) return; // исключённым просто запоминаем, что у них стоит
+        if (state.rechecking) return;  // уже перекачиваем манифест — итог посчитаем по последнему рукопожатию
 
         Manifest manifest = plugin.manifestService().current();
         PlayerState.Reason reason = evaluate(data, manifest);
         if (reason == null) {
             pass(player, state, manifest == null);
-        } else {
-            fail(player, state, reason, data);
+            return;
         }
+        // Сайт мог обновиться позже, чем мы последний раз скачали манифест (обновляем раз в N минут).
+        // Прежде чем отказывать, один раз скачиваем свежий манифест и проверяем заново.
+        if (!state.rechecked && needsRecheck(data, manifest)) {
+            state.rechecked = true;
+            state.rechecking = true;
+            if (state.timeoutTask != null) { state.timeoutTask.cancel(); state.timeoutTask = null; }
+            plugin.getLogger().info("Перепроверяю манифест для " + player.getName() + " (у клиента v"
+                    + data.manifestVersion() + ", у сервера v" + manifest.version() + ")");
+            plugin.manifestService().refreshThen(ok -> {
+                state.rechecking = false;
+                if (!player.isOnline() || states.get(player.getUniqueId()) != state) return;
+                HandshakeData last = state.handshake != null ? state.handshake : data;
+                Manifest fresh = plugin.manifestService().current();
+                PlayerState.Reason again = evaluate(last, fresh);
+                if (again == null) pass(player, state, fresh == null);
+                else fail(player, state, again, last);
+            });
+            return;
+        }
+        fail(player, state, reason, data);
+    }
+
+    /** Время последней принудительной перепроверки — чтобы толпа игроков не долбила сайт. */
+    private long lastForcedRefresh;
+
+    /**
+     * Нужно ли перекачать манифест перед отказом: клиент знает более новую сборку,
+     * чем сервер, или серверный манифест давно не обновлялся.
+     */
+    private boolean needsRecheck(HandshakeData data, Manifest manifest) {
+        if (manifest == null) return false;
+        if (data.manifestVersion() > manifest.version()) return true;
+        long now = System.currentTimeMillis();
+        java.time.Instant last = plugin.manifestService().lastSuccess();
+        boolean stale = last == null || now - last.toEpochMilli() > 20_000;
+        if (stale && now - lastForcedRefresh > 15_000) {
+            lastForcedRefresh = now;
+            return true;
+        }
+        return false;
     }
 
     /** Возвращает причину отказа или null, если всё в порядке. */

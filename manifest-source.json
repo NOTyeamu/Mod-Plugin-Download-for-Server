@@ -2,7 +2,7 @@
   "_comment": "Источник для manifest.json (моды, ModSync) и plugins.json (плагины, PluginSync). Редактируйте этот файл, CI соберёт и подпишет оба. {modsync}/{pixelui} — версии модов, {modgate}/{pixelui_paper}/{pluginsync}/{pixelauth} — версии плагинов из build.gradle.kts. Внешний плагин: {\"name\": имя из plugin.yml, \"version\", \"url\": https-ссылка на jar}.",
   "siteUrl": "https://yeamu.my.id",
   "minecraft": "1.21.11",
-  "modsyncMinVersion": "{modsync}",
+  "modsyncMinVersion": "1.1.1",
   "mods": [
     {
       "id": "modsync",
@@ -32,6 +32,9 @@
     },
     {
       "file": "ModSync-1.1.0.jar"
+    },
+    {
+      "file": "ModSync-1.1.1.jar"
     },
     {
       "file": "PixelUI-1.1.0.jar"
@@ -78,6 +81,9 @@
     }
   ],
   "pluginsRemove": [
+    {
+      "file": "ModGate-1.1.0.jar"
+    },
     {
       "file": "PixelUI-Paper-1.1.0.jar"
     },

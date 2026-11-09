@@ -21,6 +21,10 @@ public final class PlayerState {
     Status status = Status.PENDING;
     Reason reason;
     HandshakeData handshake;
+    /** Манифест уже перепроверяли для этого входа. */
+    boolean rechecked;
+    /** Идёт перекачка манифеста — новые рукопожатия только запоминаем. */
+    boolean rechecking;
     long quarantineStartedAt;
     BukkitTask timeoutTask;
     BukkitTask kickTask;
