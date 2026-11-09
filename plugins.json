@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "generated": "2026-11-09T14:02:46Z",
+  "version": 3,
+  "generated": "2026-11-09T14:15:37Z",
   "format": 1,
   "minecraft": "1.21.11",
   "plugins": [
@@ -17,11 +17,11 @@
     {
       "id": "pixelui-paper",
       "name": "PixelUI",
-      "version": "1.1.1",
-      "file": "PixelUI-Paper-1.1.1.jar",
-      "url": "https://yeamu.my.id/downloads/PixelUI-Paper-1.1.1.jar",
-      "sha256": "990cb893cbee610a74ebaf6c3d20fe52371e6eeab55f0b68e1935338f09f3366",
-      "size": 70122,
+      "version": "1.1.2",
+      "file": "PixelUI-Paper-1.1.2.jar",
+      "url": "https://yeamu.my.id/downloads/PixelUI-Paper-1.1.2.jar",
+      "sha256": "262f648d5361794e17016ff195252a5fdac6ff91678dc7505613634653606235",
+      "size": 72051,
       "description": "Серверная часть пиксельного GUI"
     },
     {
@@ -38,6 +38,9 @@
   "remove": [
     {
       "file": "PixelUI-Paper-1.1.0.jar"
+    },
+    {
+      "file": "PixelUI-Paper-1.1.1.jar"
     }
   ]
 }
