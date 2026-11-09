@@ -1,6 +1,6 @@
 {
-  "version": 6,
-  "generated": "2026-11-09T15:36:29Z",
+  "version": 7,
+  "generated": "2026-11-09T15:48:15Z",
   "format": 1,
   "minecraft": "1.21.11",
   "plugins": [
@@ -27,11 +27,11 @@
     {
       "id": "pluginsync",
       "name": "PluginSync",
-      "version": "1.0.0",
-      "file": "PluginSync-1.0.0.jar",
-      "url": "https://yeamu.my.id/downloads/PluginSync-1.0.0.jar",
-      "sha256": "a55a9f36064cb9af6d845b8cef9da4fb78c71d3055c83de5dd9f49545534434e",
-      "size": 50706,
+      "version": "1.1.0",
+      "file": "PluginSync-1.1.0.jar",
+      "url": "https://yeamu.my.id/downloads/PluginSync-1.1.0.jar",
+      "sha256": "a9b1c439a2018a4c9ee9a5bf3b50ccbfd0c3a4ea9a51c4e98c3f725fa43f7f9d",
+      "size": 57214,
       "description": "Автообновление плагинов сервера"
     },
     {
