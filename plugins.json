@@ -1,6 +1,6 @@
 {
-  "version": 9,
-  "generated": "2026-11-09T16:28:13Z",
+  "version": 10,
+  "generated": "2026-11-09T17:09:02Z",
   "format": 1,
   "minecraft": "1.21.11",
   "plugins": [
@@ -37,12 +37,22 @@
     {
       "id": "pixelauth",
       "name": "PixelAuth",
-      "version": "1.1.2",
-      "file": "PixelAuth-1.1.2.jar",
-      "url": "https://yeamu.my.id/downloads/PixelAuth-1.1.2.jar",
-      "sha256": "8ba90255369911487341ae281bdd5d8aa6e29ff6ffce5bc0d349dde8ba2dfc36",
-      "size": 82339,
+      "version": "1.1.3",
+      "file": "PixelAuth-1.1.3.jar",
+      "url": "https://yeamu.my.id/downloads/PixelAuth-1.1.3.jar",
+      "sha256": "52d9b3b13ca59c0f3bae2f713e4b19517dfa83f2248d3dfade370a1afd36cbda",
+      "size": 82319,
       "description": "Авторизация с пиксельными окнами (замена AuthMe)"
+    },
+    {
+      "id": "nightvote",
+      "name": "NightVote",
+      "version": "1.0.0",
+      "file": "NightVote-1.0.0.jar",
+      "url": "https://yeamu.my.id/downloads/NightVote-1.0.0.jar",
+      "sha256": "703fb5ee9d2d602c63cfe3e4a23cdadcacd63b79b027c55e2cf595f968610d24",
+      "size": 20377,
+      "description": "Голосование за пропуск ночи через PixelUI"
     }
   ],
   "remove": [
@@ -63,6 +73,15 @@
     },
     {
       "file": "PixelAuth-1.0.0.jar"
+    },
+    {
+      "file": "PixelAuth-1.1.0.jar"
+    },
+    {
+      "file": "PixelAuth-1.1.1.jar"
+    },
+    {
+      "file": "PixelAuth-1.1.2.jar"
     }
   ]
 }

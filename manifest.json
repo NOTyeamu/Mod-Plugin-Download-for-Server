@@ -1,6 +1,6 @@
 {
-  "version": 11,
-  "generated": "2026-11-09T15:36:29Z",
+  "version": 12,
+  "generated": "2026-11-09T17:09:02Z",
   "format": 1,
   "minecraft": "1.21.11",
   "modsync": {
@@ -27,6 +27,16 @@
       "sha256": "c52072bc6aa2d36661cc3d632fc152cd6f49e92020ddf22618ba92c31f08bfcf",
       "size": 92104,
       "description": "Кастомные пиксельные уведомления, плашки и меню"
+    },
+    {
+      "id": "skyicon",
+      "name": "SkyIcon",
+      "version": "1.0.0",
+      "file": "SkyIcon-1.0.0.jar",
+      "url": "https://yeamu.my.id/downloads/SkyIcon-1.0.0.jar",
+      "sha256": "bd7936648ae1e8cd9943bb50f1ddab7cb8adbb41c62ac20d02c91fe9283d98ab",
+      "size": 10620,
+      "description": "Пиксельное солнце или луна вверху экрана при смене дня и ночи"
     },
     {
       "id": "fabric-api",
@@ -66,5 +76,5 @@
     }
   ],
   "optional": [],
-  "modsHash": "99330e294a3a5bbab2f0f27f7b8032f77fa9c7d1533ba206e60921b95a8c2015"
+  "modsHash": "0d1a1194a3525397cd62f49b3c9acb990e62a0c5a70fb7d743129c99f32c30a5"
 }
