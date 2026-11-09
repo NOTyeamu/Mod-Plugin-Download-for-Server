@@ -1,17 +1,17 @@
 {
-  "version": 4,
-  "generated": "2026-11-09T15:07:54Z",
+  "version": 5,
+  "generated": "2026-11-09T15:21:42Z",
   "format": 1,
   "minecraft": "1.21.11",
   "plugins": [
     {
       "id": "modgate",
       "name": "ModGate",
-      "version": "1.1.0",
-      "file": "ModGate-1.1.0.jar",
-      "url": "https://yeamu.my.id/downloads/ModGate-1.1.0.jar",
-      "sha256": "a2ef5f2523176e167b242fd4abe286a8ceddf7357b8ee73a24b04d82f3887376",
-      "size": 52606,
+      "version": "1.1.1",
+      "file": "ModGate-1.1.1.jar",
+      "url": "https://yeamu.my.id/downloads/ModGate-1.1.1.jar",
+      "sha256": "be69f2a1a18e7a1d8962065af8bc344c26434960ecc496156ea0eaf27ffacb8a",
+      "size": 53442,
       "description": "Проверка клиентского мода ModSync"
     },
     {
@@ -46,6 +46,9 @@
     }
   ],
   "remove": [
+    {
+      "file": "ModGate-1.1.0.jar"
+    },
     {
       "file": "PixelUI-Paper-1.1.0.jar"
     },

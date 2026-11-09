@@ -1,21 +1,21 @@
 {
-  "version": 9,
-  "generated": "2026-11-09T15:07:55Z",
+  "version": 10,
+  "generated": "2026-11-09T15:21:42Z",
   "format": 1,
   "minecraft": "1.21.11",
   "modsync": {
-    "version": "1.1.1",
+    "version": "1.1.2",
     "minVersion": "1.1.1"
   },
   "mods": [
     {
       "id": "modsync",
       "name": "ModSync",
-      "version": "1.1.1",
-      "file": "ModSync-1.1.1.jar",
-      "url": "https://yeamu.my.id/downloads/ModSync-1.1.1.jar",
-      "sha256": "94dcc8ef664857acd813177d5e3b2440233de47dc01e022ed5695029c5357c3e",
-      "size": 79169,
+      "version": "1.1.2",
+      "file": "ModSync-1.1.2.jar",
+      "url": "https://yeamu.my.id/downloads/ModSync-1.1.2.jar",
+      "sha256": "d5f33e752ed3a32278671e80837fe9b0da4df4bfa807786f18170c8bbacd3618",
+      "size": 80064,
       "description": "Автообновление модов сервера"
     },
     {
@@ -47,6 +47,9 @@
       "file": "ModSync-1.1.0.jar"
     },
     {
+      "file": "ModSync-1.1.1.jar"
+    },
+    {
       "file": "PixelUI-1.1.0.jar"
     },
     {
@@ -60,5 +63,5 @@
     }
   ],
   "optional": [],
-  "modsHash": "7f90f3be154c0da367fc82a65a5493da618ec7acca37e376f503ca0aa9182943"
+  "modsHash": "43de726d84c17c0be3c1773a43f6297ea1cbadddd8843a34cffccd0dbe7ee442"
 }
