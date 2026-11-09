@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "generated": "2026-11-09T09:09:38Z",
+  "version": 2,
+  "generated": "2026-11-09T12:09:57Z",
   "format": 1,
   "minecraft": "1.21.11",
   "modsync": {
@@ -14,8 +14,8 @@
       "version": "1.0.0",
       "file": "ModSync-1.0.0.jar",
       "url": "https://yeamu.my.id/downloads/ModSync-1.0.0.jar",
-      "sha256": "78247cc41bf317372bb46b97bb9ff6834a2f80074f0ce3c95a111af6d17d179b",
-      "size": 61687,
+      "sha256": "fdf1f6929acc29617327b6dea359f1141d4f00873144cfd6bfd2c250d8448db8",
+      "size": 62116,
       "description": "Автообновление модов сервера"
     },
     {
@@ -31,5 +31,5 @@
   ],
   "remove": [],
   "optional": [],
-  "modsHash": "766bbf7407422018a35869a34fd68196eddaf085ae5f4c024cc358e3ac368e8e"
+  "modsHash": "f0f075d85852be626bec50d4e58bb7f1920eeda3a4d7d9ffc878e544f0769f80"
 }
