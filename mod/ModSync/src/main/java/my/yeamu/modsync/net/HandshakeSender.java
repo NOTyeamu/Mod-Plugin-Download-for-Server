@@ -1,6 +1,7 @@
 package my.yeamu.modsync.net;
 
 import my.yeamu.modsync.SyncLog;
+import my.yeamu.modsync.gui.GateOverlay;
 import my.yeamu.modsync.update.ModsHasher;
 import my.yeamu.modsync.update.UpdateManager;
 import net.fabricmc.fabric.api.client.networking.v1.C2SPlayChannelEvents;
@@ -44,6 +45,9 @@ public final class HandshakeSender {
                 sendAsync(context.client());
             } else if ("result".equals(payload.action())) {
                 SyncLog.info("ModGate: результат проверки — " + payload.text());
+                GateOverlay.onResult(payload.text()); // итог показываем на экране, а не в чате
+            } else if ("gate".equals(payload.action())) {
+                GateOverlay.onGate(payload.text()); // подробности отказа: причина, отсчёт, сайт
             }
         });
 
@@ -51,9 +55,15 @@ public final class HandshakeSender {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> sendAsync(client));
         // Сервер объявил, что слушает наш канал
         C2SPlayChannelEvents.REGISTER.register((handler, sender, client, channels) -> {
-            if (channels.contains(HandshakePayload.CHANNEL)) sendAsync(client);
+            if (channels.contains(HandshakePayload.CHANNEL)) {
+                client.execute(GateOverlay::onChecking); // на сервере есть ModGate — показываем «проверку»
+                sendAsync(client);
+            }
         });
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> lastSent = 0);
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            lastSent = 0;
+            client.execute(GateOverlay::reset);
+        });
     }
 
     private static void sendAsync(MinecraftClient client) {

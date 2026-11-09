@@ -163,7 +163,15 @@ public final class GateManager implements Listener {
 
     // ------------------------------------------------------------------ итог
 
+    /** ModSync 1.1.0+ сам рисует проверку на экране — таким игрокам в чат не пишем. */
+    private static boolean supportsUi(HandshakeData d) {
+        return d != null && VersionUtil.compare(d.modVersion(), "1.1.0") >= 0;
+    }
+
     private void pass(Player player, PlayerState state, boolean unverified) {
+        // Клиент может прислать рукопожатие несколько раз (вход, регистрация канала, ответ на запрос).
+        // Уже допущен — молчим, иначе в чате было по 3 одинаковых сообщения.
+        if (state.status == PlayerState.Status.OK) return;
         boolean wasFailed = state.status == PlayerState.Status.FAILED;
         state.status = PlayerState.Status.OK;
         state.reason = null;
@@ -171,7 +179,7 @@ public final class GateManager implements Listener {
         release(player);
         HandshakeData d = state.handshake;
         plugin.joinLogger().log(player, "ДОПУЩЕН", unverified ? "манифест недоступен, проверка пропущена" : "ok", d);
-        if (wasFailed || !cfg().messages().ok().isEmpty()) {
+        if (!supportsUi(d) && (wasFailed || !cfg().messages().ok().isEmpty())) {
             player.sendMessage(prefixed(cfg().messages().ok()));
         }
         send(player, "result", "ok");
@@ -188,9 +196,15 @@ public final class GateManager implements Listener {
         String reasonText = reasonText(reason, data);
         plugin.joinLogger().log(player, "ОТКАЗ", reason.name() + " — " + MM.stripTags(reasonText), data);
         send(player, "result", reason.name().toLowerCase(Locale.ROOT));
+        HandshakeData hd = data != null ? data : state.handshake;
+        boolean ui = supportsUi(hd);
+        boolean warn = cfg.mode() == GateConfig.Mode.WARN;
+        // Подробности для экрана ModSync: причина / режим / секунды до кика / сайт / текст причины (через перевод строки)
+        send(player, "gate", reason.name().toLowerCase(Locale.ROOT) + "\n" + (warn ? "warn" : "strict") + "\n"
+                + (warn ? 0 : Math.max(1, cfg.kickDelay())) + "\n" + cfg.siteUrl() + "\n" + MM.stripTags(reasonText));
 
-        if (cfg.mode() == GateConfig.Mode.WARN) {
-            player.sendMessage(prefixed(fill(cfg.messages().warn(), reasonText, cfg.kickDelay())));
+        if (warn) {
+            if (!ui) player.sendMessage(prefixed(fill(cfg.messages().warn(), reasonText, cfg.kickDelay())));
             return;
         }
 
@@ -209,11 +223,11 @@ public final class GateManager implements Listener {
             state.reminderTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
                 if (!player.isOnline() || state.status != PlayerState.Status.FAILED) return;
                 long left = kickDelay - (System.currentTimeMillis() - state.quarantineStartedAt) / 1000L;
-                if (left > 0) player.sendMessage(prefixed(fill(cfg().messages().quarantine(),
+                if (left > 0 && !supportsUi(state.handshake)) player.sendMessage(prefixed(fill(cfg().messages().quarantine(),
                         reasonText(state.reason, state.handshake), (int) left)));
             }, every, every);
         }
-        player.sendMessage(prefixed(fill(cfg.messages().quarantine(), reasonText, cfg.kickDelay())));
+        if (!ui) player.sendMessage(prefixed(fill(cfg.messages().quarantine(), reasonText, cfg.kickDelay())));
     }
 
     public void kick(Player player, PlayerState.Reason reason, HandshakeData data) {

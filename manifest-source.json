@@ -19,6 +19,10 @@
       "description": "Библиотека, нужная почти всем Fabric-модам"
     }
   ],
-  "remove": [],
+  "remove": [
+    {
+      "file": "ModSync-1.0.0.jar"
+    }
+  ],
   "optional": []
 }
