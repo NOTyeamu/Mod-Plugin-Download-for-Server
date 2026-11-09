@@ -513,7 +513,7 @@
     return pixelIcon("box", Math.floor(rng(seed)() * 360));
   }
   // Пиксельные иконки известных модов (assets/img/mods/<id>.svg). Можно также указать "icon" в манифесте.
-  const MOD_ICONS = { "modsync": "assets/img/mods/modsync.svg", "fabric-api": "assets/img/mods/fabric-api.svg" };
+  const MOD_ICONS = { "modsync": "assets/img/mods/modsync.svg", "fabric-api": "assets/img/mods/fabric-api.svg", "pixelui": "assets/img/mods/pixelui.svg" };
   function modIcon(mod) {
     const src = mod.icon || MOD_ICONS[mod.id];
     if (!src) return itemIcon(hashStr(mod.id || mod.name));

@@ -1,0 +1,15 @@
+name: PixelUI
+version: '${version}'
+main: my.yeamu.pixelui.paper.PixelUIPlugin
+api-version: '1.21'
+author: yeamu
+description: API кастомных пиксельных уведомлений, плашек и меню (клиентский мод PixelUI).
+website: https://yeamu.my.id
+commands:
+  pixelui:
+    description: Управление PixelUI
+    usage: /pixelui <notify|banner|unbanner|clear|demo|status|reload>
+permissions:
+  pixelui.admin:
+    description: Доступ к командам /pixelui
+    default: op

@@ -1,0 +1,126 @@
+# PixelUI — кастомный пиксельный интерфейс
+
+PixelUI состоит из двух частей:
+
+| Часть | Файл | Куда |
+|---|---|---|
+| Клиентский мод (Fabric 1.21.11) | `PixelUI-1.0.0.jar` | ставится сам через ModSync |
+| Серверный плагин (Paper 1.21.11) | `PixelUI-Paper-1.0.0.jar` | `plugins/` |
+
+Мод рисует настоящий кастомный интерфейс: всплывающие уведомления (тосты), плашки и меню-экраны в пиксельном стиле.
+Плагин даёт API другим плагинам. Если у игрока нет мода, плагин показывает запасной вариант (чат / actionbar / title / bossbar).
+
+## Плагин: подключение
+
+`plugin.yml` вашего плагина:
+
+```yaml
+depend: [PixelUI]
+```
+
+Gradle: `compileOnly(files("libs/PixelUI-Paper-1.0.0.jar"))`.
+
+## Плагин: уведомления
+
+```java
+PixelNotification.builder()
+    .title("&aКвест выполнен")          // &-коды или MiniMessage
+    .text("Награда: &e50 монет")        // \n — новая строка
+    .icon(PixelIcon.COIN)               // или PixelIcon.item(Material.DIAMOND)
+    .theme(PixelTheme.GOLD)             // или PixelTheme.DARK.accent(0x55FFFF)
+    .position(PixelPosition.TOP_RIGHT)
+    .duration(Duration.ofSeconds(6))
+    .sound("minecraft:entity.player.levelup")
+    .send(player);
+
+PixelUI.notify(player, "Заголовок", "Текст");   // коротко
+PixelUI.notifyAll(notification);                  // всем онлайн
+```
+
+Уведомление с тем же `id(...)` обновляется на месте (удобно для таймеров).
+
+## Плагин: плашки
+
+```java
+PixelBanner.builder("event")
+    .text("&eИвент закончится через 5:00")
+    .icon(PixelIcon.CLOCK).theme(PixelTheme.WARNING)
+    .progress(0.4f)          // -1 — без полоски
+    .duration(0)             // 0 — пока не уберут
+    .send(player);
+
+PixelUI.removeBanner(player, "event");   // null — все плашки
+```
+
+## Плагин: меню
+
+```java
+PixelMenu.builder("shop")
+    .title("&6Магазин").icon(PixelIcon.COIN).theme(PixelTheme.GOLD)
+    .columns(2).width(240)
+    .line("Баланс: &e120 монет")
+    .button("buy", "Купить", b -> b.style(PixelButtonStyle.SUCCESS)
+            .icon(PixelIcon.item(Material.DIAMOND)).tooltip("64 алмаза")
+            .closes().onClick(p -> buy(p)))
+    .button("cancel", "Отмена", b -> b.style(PixelButtonStyle.DANGER).closes())
+    .onClose(p -> { /* меню закрыто */ })
+    .open(player);
+```
+
+Обработчики вызываются в главном потоке сервера. Методы `PixelUI.*` можно вызывать из любого потока.
+
+### События
+
+- `PixelClientReadyEvent` — у игрока есть мод (пришёл hello).
+- `PixelMenuClickEvent` — нажата кнопка, можно отменить.
+- `PixelMenuCloseEvent` — меню закрыто, причина: PLAYER, BUTTON, REPLACED, SERVER, QUIT.
+
+## Справочник
+
+- Темы: `dark, stone, success, error, warning, info, gold, ender, nether`; свои цвета: `accent, bg, outline, light, dark, title, text` (0xRRGGBB или 0xAARRGGBB), `shadow(bool)`.
+- Иконки: `info, check, cross, warn, star, heart, coin, bell, gift, sword, shield, clock`, `item:<id предмета>`, `none`.
+- Позиции: `TOP_LEFT, TOP_CENTER, TOP_RIGHT, CENTER, BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT`.
+- Стили кнопок: `default, primary, success, danger, info, gold` или свой цвет `color(0xRRGGBB)`.
+- Лимиты: 5 тостов в одном углу, 18 кнопок и 30 строк в меню, 1–3 столбца.
+
+## Клиентский мод: API для других модов
+
+```java
+import my.yeamu.pixelui.api.*;
+
+PixelUI.notify(Notification.builder().title("Привет").text("Из моего мода")
+        .icon("star").theme(Theme.ENDER).build());
+PixelUI.banner(...);
+PixelUI.openMenu(menu, (m, button) -> { /* нажатие */ });
+PixelUI.registerIcon("my_icon", new String[]{ /* 16 строк пикселей */ });
+PixelUI.serverHasPlugin();
+```
+
+В `fabric.mod.json` вашего мода: `"depends": { "pixelui": "*" }`.
+
+## Команды (право `pixelui.admin`)
+
+- `/pixelui notify <игрок|*> <тема> <заголовок | текст>`
+- `/pixelui banner <игрок|*> <id> <секунд> <текст>`
+- `/pixelui unbanner <игрок|*> [id]`, `/pixelui clear <игрок|*>`
+- `/pixelui demo [игрок]` — показать всё сразу
+- `/pixelui status [игрок]`, `/pixelui reload`
+
+## config.yml
+
+```yaml
+fallback:
+  notify: chat      # chat | actionbar | title | none
+  banner: bossbar   # bossbar | actionbar | none
+  menu: chat        # chat (кликабельные кнопки) | none
+log-hello: true
+```
+
+## Протокол (канал `pixelui:main`)
+
+Пакет: VarInt длина + UTF-8 JSON. Поле `type`:
+
+- сервер → клиент: `notify`, `banner`, `banner_remove`, `clear`, `menu`, `menu_close`;
+- клиент → сервер: `hello {version}`, `click {menu, button}`, `close {menu}`.
+
+HEX-цвета в тексте округляются до 16 стандартных; HEX в темах работает полностью.
