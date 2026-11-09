@@ -1,0 +1,24 @@
+{
+  "_comment": "Источник для manifest.json. Редактируйте этот файл, CI соберёт и подпишет manifest.json. {modsync} — версия ModSync из gradle.properties.",
+  "siteUrl": "https://yeamu.my.id",
+  "minecraft": "1.21.11",
+  "modsyncMinVersion": "{modsync}",
+  "mods": [
+    {
+      "id": "modsync",
+      "name": "ModSync",
+      "version": "{modsync}",
+      "local": "downloads/ModSync-{modsync}.jar",
+      "description": "Автообновление модов сервера"
+    },
+    {
+      "id": "fabric-api",
+      "name": "Fabric API",
+      "version": "0.141.6+1.21.11",
+      "url": "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.141.6+1.21.11/fabric-api-0.141.6+1.21.11.jar",
+      "description": "Библиотека, нужная почти всем Fabric-модам"
+    }
+  ],
+  "remove": [],
+  "optional": []
+}

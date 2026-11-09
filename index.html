@@ -1,53 +1,175 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Проверка домена yeamu.my.id</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .container {
-            text-align: center;
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-            max-width: 500px;
-            width: 90%;
-        }
-        h1 {
-            color: #2da44e;
-            margin-bottom: 10px;
-        }
-        p {
-            font-size: 1.1em;
-            color: #666;
-            line-height: 1.5;
-        }
-        .domain-badge {
-            background-color: #f1f8ff;
-            color: #0366d6;
-            padding: 5px 12px;
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 1.1em;
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yeamu — Minecraft сервер</title>
+<meta name="description" content="Майнкрафт-сервер Yeamu: адрес, статус и мод ModSync для автоматической установки модов сервера.">
+<meta name="theme-color" content="#16202e">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='%23866043'/><rect width='16' height='5' fill='%235d9c33'/><rect y='5' x='2' width='2' height='1' fill='%235d9c33'/><rect y='5' x='9' width='3' height='2' fill='%235d9c33'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Сайт успешно работает!</h1>
-        <p>Если вы видите эту страницу, значит, привязка домена к <strong>GitHub Pages</strong> прошла успешно.</p>
-        <p><span class="domain-badge">yeamu.my.id</span></p>
+
+<!-- Экран загрузки -->
+<div id="loader" aria-hidden="true">
+  <div class="loader-inner">
+    <p class="loader-title">Загрузка мира…</p>
+    <div class="mc-progress"><span id="loader-bar"></span></div>
+    <p class="loader-sub" id="loader-sub">Ставим блоки</p>
+  </div>
+</div>
+
+<!-- Навигация -->
+<header class="nav" id="nav">
+  <a class="nav-logo" href="#top"><span class="nav-block"></span>YEAMU</a>
+  <nav class="nav-links" id="nav-links">
+    <a href="#server">Сервер</a>
+    <a href="#download">Скачать</a>
+    <a href="#install">Установка</a>
+    <a href="#faq">Вопросы</a>
+  </nav>
+  <div class="nav-actions">
+    <button class="icon-btn" id="sound-toggle" title="Звук кнопок" aria-label="Звук кнопок"><span class="pix-icon" data-icon="soundOff"></span></button>
+    <button class="icon-btn nav-burger" id="nav-burger" aria-label="Меню"><span class="pix-icon" data-icon="burger"></span></button>
+  </div>
+</header>
+
+<!-- Баннер причины (если пришли по ссылке из игры) -->
+<div class="reason-banner" id="reason-banner" hidden>
+  <div class="tooltip-box">
+    <b id="reason-title">Нужен мод</b>
+    <span id="reason-text"></span>
+    <button class="reason-close" id="reason-close" aria-label="Закрыть"><span class="pix-icon" data-icon="close"></span></button>
+  </div>
+</div>
+
+<main id="top">
+  <!-- Главный экран -->
+  <section class="hero">
+    <canvas id="world" aria-hidden="true"></canvas>
+    <div class="hero-vignette"></div>
+    <div class="hero-content">
+      <h1 class="logo" data-text="YEAMU">YEAMU</h1>
+      <p class="logo-sub">SURVIVAL · FABRIC · 1.21.11</p>
+      <span class="splash" id="splash">Теперь с модами!</span>
+      <div class="hero-buttons">
+        <a class="mc-btn mc-btn--big mc-btn--green" href="#download">Скачать мод</a>
+        <button class="mc-btn mc-btn--big" data-copy-address>Скопировать адрес</button>
+      </div>
+      <p class="hero-hint">Листайте вниз ↓</p>
     </div>
+  </section>
+
+  <div class="grass-edge"></div>
+
+  <!-- Сервер -->
+  <section class="section section--dirt" id="server">
+    <div class="container">
+      <h2 class="section-title reveal">Сервер</h2>
+      <div class="server-card reveal">
+        <div class="server-icon" id="server-icon"></div>
+        <div class="server-info">
+          <div class="server-row">
+            <span class="server-name">Yeamu</span>
+            <span class="server-ping" id="server-ping" title="Статус"><i></i><i></i><i></i><i></i><i></i></span>
+          </div>
+          <div class="server-motd" id="server-motd">Проверяем статус…</div>
+          <div class="server-meta">
+            <span id="server-players">—/—</span>
+            <span id="server-version">1.21.11</span>
+          </div>
+        </div>
+      </div>
+      <div class="address reveal">
+        <code id="server-address">yeamu.my.id</code>
+        <button class="mc-btn" data-copy-address>Копировать</button>
+      </div>
+      <div class="features">
+        <article class="feature panel reveal"><div class="feature-icon" data-icon="sword"></div><h3>Выживание</h3><p>Честное выживание с друзьями без лишних правил.</p></article>
+        <article class="feature panel reveal"><div class="feature-icon" data-icon="box"></div><h3>Моды</h3><p>Сборка модов сервера ставится и обновляется сама — через ModSync.</p></article>
+        <article class="feature panel reveal"><div class="feature-icon" data-icon="shield"></div><h3>Защита</h3><p>Подписанный манифест, проверка SHA-256 и белый список доменов.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <div class="stone-edge"></div>
+
+  <!-- Скачать -->
+  <section class="section section--stone" id="download">
+    <div class="container">
+      <h2 class="section-title reveal">Скачать</h2>
+      <div class="download-grid">
+        <div class="download-main panel reveal">
+          <div class="panel-title">ModSync</div>
+          <p class="dl-desc">Клиентский мод для Fabric. Сам скачивает, проверяет и обновляет все моды сервера. Без него на сервер не пустит.</p>
+          <div class="dl-meta">
+            <span>Версия: <b id="dl-version">…</b></span>
+            <span>Размер: <b id="dl-size">…</b></span>
+            <span>Сборка: <b id="dl-manifest">…</b></span>
+          </div>
+          <a class="mc-btn mc-btn--big mc-btn--green dl-btn" id="dl-modsync" href="#" aria-disabled="true"><span class="pix-icon" data-icon="download"></span>Скачать ModSync</a>
+          <div class="dl-sec-row">
+            <a class="mc-btn dl-btn-sec" id="dl-fabricapi" href="https://modrinth.com/mod/fabric-api" target="_blank" rel="noopener">Fabric API</a>
+            <a class="mc-btn dl-btn-sec" href="https://fabricmc.net/use/installer/" target="_blank" rel="noopener">Fabric Loader</a>
+          </div>
+          <p class="dl-sha" id="dl-sha"></p>
+        </div>
+        <div class="inventory panel reveal">
+          <div class="panel-title">Моды сервера</div>
+          <div class="slots" id="slots"></div>
+          <p class="inv-note" id="inv-note">Наведите на ячейку, чтобы увидеть мод</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="dirt-edge"></div>
+
+  <!-- Установка -->
+  <section class="section section--planks" id="install">
+    <div class="container">
+      <h2 class="section-title reveal">Установка</h2>
+      <ol class="advancements">
+        <li class="adv reveal"><div class="adv-icon" data-icon="hammer"></div><div><span class="adv-label">Достижение получено!</span><b>Поставить Fabric</b><p>Скачайте установщик Fabric и выберите версию <b>1.21.11</b>.</p></div></li>
+        <li class="adv reveal"><div class="adv-icon" data-icon="folder"></div><div><span class="adv-label">Достижение получено!</span><b>Положить в mods</b><p>Скачайте <b>ModSync</b> и <b>Fabric API</b> и положите в папку <code>.minecraft/mods</code>.</p></div></li>
+        <li class="adv reveal"><div class="adv-icon" data-icon="play"></div><div><span class="adv-label">Достижение получено!</span><b>Первый запуск</b><p>Запустите игру — ModSync скачает моды сервера и попросит перезапуск.</p></div></li>
+        <li class="adv adv--challenge reveal"><div class="adv-icon" data-icon="trophy"></div><div><span class="adv-label">Испытание завершено!</span><b>Добро пожаловать</b><p>Подключитесь к <b>yeamu.my.id</b>. Обновления дальше ставятся сами.</p></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <div class="stone-edge stone-edge--flip"></div>
+
+  <!-- FAQ -->
+  <section class="section section--deepslate" id="faq">
+    <div class="container container--narrow">
+      <h2 class="section-title reveal">Вопросы</h2>
+      <div class="faq">
+        <details class="panel reveal"><summary>Меня кикнуло: «мод не установлен»</summary><div class="faq-body"><p>Установите ModSync по шагам выше. Сервер ждёт от мода рукопожатие в первые секунды после входа.</p></div></details>
+        <details class="panel reveal"><summary>Пишет «мод или сборка устарели»</summary><div class="faq-body"><p>Перезапустите игру — ModSync скачает обновления. Или нажмите в главном меню «Проверить обновления».</p></div></details>
+        <details class="panel reveal"><summary>Пишет «чужие моды»</summary><div class="faq-body"><p>В папке <code>mods</code> лежат моды не из сборки сервера. Уберите их или спросите администратора, можно ли добавить мод в список разрешённых.</p></div></details>
+        <details class="panel reveal"><summary>Это безопасно?</summary><div class="faq-body"><p>Манифест подписан ключом Ed25519, каждый файл проверяется по SHA-256, скачивание только с доверенных доменов. Если что-то не сходится, ModSync ничего не меняет.</p></div></details>
+        <details class="panel reveal"><summary>Можно зайти с Bedrock?</summary><div class="faq-body"><p>Да, если на сервере включён Geyser/Floodgate — для Bedrock-игроков мод не требуется.</p></div></details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="nav-logo"><span class="nav-block"></span>YEAMU</div>
+    <p>© <span id="year">2026</span> Yeamu. Не является официальным продуктом Minecraft. Not affiliated with Mojang or Microsoft.</p>
+  </div>
+</footer>
+
+<div class="tooltip" id="tooltip" role="tooltip"></div>
+<div class="toast" id="toast"><div class="adv-icon" data-icon="check"></div><div><span class="adv-label">Готово!</span><b id="toast-text">Адрес скопирован</b></div></div>
+
+<script src="assets/js/blocks-bg.js" defer></script>
+<script src="assets/js/main.js" defer></script>
 </body>
 </html>
