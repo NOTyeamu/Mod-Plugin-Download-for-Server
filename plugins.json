@@ -1,6 +1,6 @@
 {
-  "version": 3,
-  "generated": "2026-11-09T14:15:37Z",
+  "version": 4,
+  "generated": "2026-11-09T15:07:54Z",
   "format": 1,
   "minecraft": "1.21.11",
   "plugins": [
@@ -17,11 +17,11 @@
     {
       "id": "pixelui-paper",
       "name": "PixelUI",
-      "version": "1.1.2",
-      "file": "PixelUI-Paper-1.1.2.jar",
-      "url": "https://yeamu.my.id/downloads/PixelUI-Paper-1.1.2.jar",
-      "sha256": "262f648d5361794e17016ff195252a5fdac6ff91678dc7505613634653606235",
-      "size": 72051,
+      "version": "1.1.3",
+      "file": "PixelUI-Paper-1.1.3.jar",
+      "url": "https://yeamu.my.id/downloads/PixelUI-Paper-1.1.3.jar",
+      "sha256": "7a43addd653e741f9509492a380aa8ac7644cb58a3ac6131067dd74abc050286",
+      "size": 80179,
       "description": "Серверная часть пиксельного GUI"
     },
     {
@@ -33,6 +33,16 @@
       "sha256": "a55a9f36064cb9af6d845b8cef9da4fb78c71d3055c83de5dd9f49545534434e",
       "size": 50706,
       "description": "Автообновление плагинов сервера"
+    },
+    {
+      "id": "pixelauth",
+      "name": "PixelAuth",
+      "version": "1.0.0",
+      "file": "PixelAuth-1.0.0.jar",
+      "url": "https://yeamu.my.id/downloads/PixelAuth-1.0.0.jar",
+      "sha256": "eeec7d07eaef206e744280c36e017cf1c460631253569d6990f88addebb88ae0",
+      "size": 70195,
+      "description": "Авторизация с пиксельными окнами (замена AuthMe)"
     }
   ],
   "remove": [
@@ -41,6 +51,9 @@
     },
     {
       "file": "PixelUI-Paper-1.1.1.jar"
+    },
+    {
+      "file": "PixelUI-Paper-1.1.2.jar"
     }
   ]
 }
