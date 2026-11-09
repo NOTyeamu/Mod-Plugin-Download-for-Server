@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "skyicon",
+  "version": "${version}",
+  "name": "SkyIcon",
+  "description": "При смене дня и ночи вверху по центру на пару секунд появляется пиксельное солнце или луна.",
+  "authors": [
+    "yeamu"
+  ],
+  "contact": {
+    "homepage": "https://yeamu.my.id",
+    "sources": "https://github.com/NOTyeamu/Mod-Plugin-Download-for-Server"
+  },
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "my.yeamu.skyicon.SkyIconClient"
+    ]
+  },
+  "mixins": [
+    "skyicon.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

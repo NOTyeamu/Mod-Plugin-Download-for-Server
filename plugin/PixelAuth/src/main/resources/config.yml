@@ -109,7 +109,7 @@ messages:
   wrong-password: '&cНеверный пароль! Осталось попыток: &e{attempts}'
   login-success-title: '&aВы вошли!'
   login-success: '&7Приятной игры, &e{name}&7.'
-  session-login: '&7Вход по сессии — с возвращени��м, &e{name}&7!'
+  session-login: '&7Вход по сессии — с возвращением, &e{name}&7!'
   bedrock-login: '&7Вход через Bedrock — приятной игры, &e{name}&7!'
   register-success-title: '&6Аккаунт создан!'
   register-success: '&7Запомните пароль — он понадобится при входе.'
@@ -174,7 +174,7 @@ messages:
   ui-reset-button: 'Сохранить и войти'
   # --- сброс пароля
   reset-chat: '&8Забыли пароль? &7/forgotpassword &8(клик)'
-  reset-requested: '&aЗапрос отправлен администрации. Зайдите позже.'
+  reset-requested: '&aЗапрос отправлен администрации'
   reset-cooldown: '&eЗапрос уже отправлен — ждите ответа.'
   reset-disabled: '&cСброс отключён. Напишите администрации.'
   reset-denied: '&cАдминистрация отклонила сброс пароля.'

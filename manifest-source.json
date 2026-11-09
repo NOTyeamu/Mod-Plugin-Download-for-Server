@@ -1,5 +1,5 @@
 {
-  "_comment": "Источник для manifest.json (моды, ModSync) и plugins.json (плагины, PluginSync). Редактируйте этот файл, CI соберёт и подпишет оба. {modsync}/{pixelui} — версии модов, {modgate}/{pixelui_paper}/{pluginsync}/{pixelauth} — версии плагинов из build.gradle.kts. Внешний плагин: {\"name\": имя из plugin.yml, \"version\", \"url\": https-ссылка на jar}.",
+  "_comment": "Источник для manifest.json (моды, ModSync) и plugins.json (плагины, PluginSync). Редактируйте этот файл, CI соберёт и подпишет оба. {modsync}/{pixelui}/{skyicon} — версии модов, {modgate}/{pixelui_paper}/{pluginsync}/{pixelauth}/{nightvote} — версии плагинов из build.gradle.kts. Внешний плагин: {\"name\": имя из plugin.yml, \"version\", \"url\": https-ссылка на jar}.",
   "siteUrl": "https://yeamu.my.id",
   "minecraft": "1.21.11",
   "modsyncMinVersion": "1.1.1",
@@ -17,6 +17,13 @@
       "version": "{pixelui}",
       "local": "downloads/PixelUI-{pixelui}.jar",
       "description": "Кастомные пиксельные уведомления, плашки и меню"
+    },
+    {
+      "id": "skyicon",
+      "name": "SkyIcon",
+      "version": "{skyicon}",
+      "local": "downloads/SkyIcon-{skyicon}.jar",
+      "description": "Пиксельное солнце или луна вверху экрана при смене дня и ночи"
     },
     {
       "id": "fabric-api",
@@ -81,6 +88,13 @@
       "version": "{pixelauth}",
       "local": "downloads/PixelAuth-{pixelauth}.jar",
       "description": "Авторизация с пиксельными окнами (замена AuthMe)"
+    },
+    {
+      "id": "nightvote",
+      "name": "NightVote",
+      "version": "{nightvote}",
+      "local": "downloads/NightVote-{nightvote}.jar",
+      "description": "Голосование за пропуск ночи через PixelUI"
     }
   ],
   "pluginsRemove": [
@@ -101,6 +115,15 @@
     },
     {
       "file": "PixelAuth-1.0.0.jar"
+    },
+    {
+      "file": "PixelAuth-1.1.0.jar"
+    },
+    {
+      "file": "PixelAuth-1.1.1.jar"
+    },
+    {
+      "file": "PixelAuth-1.1.2.jar"
     }
   ]
 }

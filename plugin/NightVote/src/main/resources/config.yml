@@ -1,0 +1,73 @@
+# NightVote — голосование за пропуск ночи (плашка «Да (Y) / Нет (N)» из PixelUI).
+# Игроки без мода PixelUI получат кнопки [Да] [Нет] в чате.
+# Цвета — коды &a, &c, &e и т.д.
+
+# Миры, где есть голосование. Пусто — все обычные миры (без Незера и Энда).
+worlds: []
+
+# Когда спрашивать
+trigger:
+  nightfall: true   # само, когда наступает ночь
+  bed: true         # когда кто-то ложится в кровать
+  command: true     # /nightvote
+
+# Через сколько секунд после наступления ночи спрашивать
+# (чтобы иконка луны из SkyIcon успела показаться и исчезнуть)
+start-delay-seconds: 6
+
+# Ночь — время мира от и до (как у кровати)
+night-start: 12542
+night-end: 23460
+
+vote:
+  duration-seconds: 30
+  # Ночь пропускают, если «Да» больше этого процента (50 — строгое большинство)
+  required-percent: 50
+  # Минимум голосов «Да»
+  min-yes: 1
+  # false — молчащие не считаются; true — молчание = «Нет»
+  silent-as-no: false
+  # Пауза перед новым голосованием в ту же ночь (кровать / команда), сек
+  cooldown-seconds: 90
+  ignore-spectators: true
+  # Не спрашивать тех, кто ещё не вошёл в аккаунт (PixelAuth)
+  require-login: true
+  # П��сать в чат, кто как проголосовал
+  announce-votes: true
+  # Счётчик голосов над хотбаром
+  actionbar: true
+  # Тема PixelUI: dark, stone, success, error, warning, info, gold, ender, nether
+  theme: ender
+  # Положение: TOP_LEFT, TOP_CENTER, TOP_RIGHT, CENTER, BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT
+  position: TOP_CENTER
+  sound: 'minecraft:block.note_block.chime'
+
+on-skip:
+  # Время, до которого перематываем (0 — рассвет, 1000 — как /time set day)
+  time: 0
+  clear-weather: true
+
+messages:
+  prefix: '&8[&9Ночь&8] '
+  prompt-question: '&eПропустить ночь?'
+  prompt-text: '&7Наступила ночь. Голосуют: {count}'
+  prompt-text-player: '&7Предложил &f{player}&7. Голосуют: {count}'
+  yes-label: 'Пропустить'
+  no-label: 'Оставить'
+  voted-yes: '&f{player} &aза пропуск ночи'
+  voted-no: '&f{player} &cпротив пропуска'
+  actionbar: '&9☾ &fПропуск ночи: &aДа {yes} &8· &cНет {no} &8· &7ждём {wait} &8· &e{left} с'
+  skipped-title: '&aНочь пропущена'
+  kept-title: '&eНочь остаётся'
+  result-text: '&aДа: {yes} &8· &cНет: {no}'
+  not-night: '&cСейчас не ночь.'
+  already: '&eГолосование уже идёт.'
+  cooldown: '&cПовторное голосование через {s} сек.'
+  world-disabled: '&cВ этом мире голосования нет.'
+  command-disabled: '&cЗапуск командой отключён.'
+  only-player: '&cКоманда только для игроков.'
+  no-permission: '&cНет прав.'
+  cancelled: '&eОтменено голосований: {n}'
+  status-none: '&7Сейчас голосования нет.'
+  reloaded: '&aКонфиг перезагружен.'
+  usage: '&7/nightvote [start|status|cancel|reload]'

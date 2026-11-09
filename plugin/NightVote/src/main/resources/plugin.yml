@@ -1,0 +1,24 @@
+name: NightVote
+version: '${version}'
+main: my.yeamu.nightvote.NightVotePlugin
+api-version: '1.21'
+author: yeamu
+description: Голосование за пропуск ночи через пиксельный вопрос PixelUI (Да Y / Нет N).
+website: https://yeamu.my.id
+depend: [PixelUI]
+softdepend: [PixelAuth]
+commands:
+  nightvote:
+    description: Голосование за пропуск ночи
+    usage: /nightvote [start|status|cancel|reload]
+    aliases: [skipnight, nv]
+permissions:
+  nightvote.start:
+    description: Начать голосование командой
+    default: true
+  nightvote.admin:
+    description: Отмена голосования и перезагрузка конфига
+    default: op
+  nightvote.exempt:
+    description: Игрока не спрашивают и не считают (например, AFK-боты)
+    default: false

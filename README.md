@@ -9,6 +9,8 @@
 | ModSync | `mod/ModSync` | Fabric-мод 1.21.11: ставит и обновляет моды сервера |
 | PluginSync | `plugin/PluginSync` | Плагин Paper 1.21.11: сам обновляет и ставит плагины сервера (и себя) |
 | PixelAuth | `plugin/PixelAuth` | Авторизация с пиксельными окнами PixelUI (замена AuthMe), см. `docs/PixelAuth.md` |
+| SkyIcon | `mod/SkyIcon` | Клиентский мод: пиксельное солнце/луна вверху экрана при смене дня и ночи, см. `docs/SkyIcon.md` |
+| NightVote | `plugin/NightVote` | Голосование за пропуск ночи через вопрос PixelUI Да/Нет, см. `docs/NightVote.md` |
 | Список плагинов | `manifest-source.json` (`plugins`) → `plugins.json` + `.sig` | Подписан Ed25519 тем же ключом |
 | Манифест | `manifest-source.json` → `manifest.json` + `.sig` | Список модов, подписанный Ed25519 |
 | Утилита | `tools/manifest.py` | keygen / build / sign / verify |
@@ -103,7 +105,7 @@ URL только HTTPS и только с доменов белого списк
   Это защита от случайных ошибок и ленивых читеров, а не античит.
 - Хеш и список модов клиент сообщает о себе сам — сервер не может проверить, что реально загружено.
 - Исключение Bedrock по префиксу без Floodgate можно обойти, взяв ник с этим префиксом на offline-сервере.
-- Проверка идёт после входа в мир (фа��а play), а не в фазе configuration.
+- Проверка идёт после входа в мир (фаза play), а не в фазе configuration.
 - Ресурспаки, шейдеры и конфиги модов не синхронизируются.
 - PluginSync не меняет плагины «на лету» — новые версии заработают после перезапуска.
   `restart.method: restart` требует `restart-script` в `spigot.yml` или хостинг с автоперезапуском.

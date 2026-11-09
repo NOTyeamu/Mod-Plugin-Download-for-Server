@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "my.yeamu.skyicon.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "BossBarHudAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

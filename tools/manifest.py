@@ -5,7 +5,7 @@
 
   python tools/manifest.py keygen            — создать пару ключей Ed25519
   python tools/manifest.py build             — собрать manifest.json (моды) и plugins.json (плагины)
-  python tools/manifest.py sign              — подписать оба (ключ в п��ременной MANIFEST_PRIVATE_KEY)
+  python tools/manifest.py sign              — подписать оба (ключ в переменной MANIFEST_PRIVATE_KEY)
   python tools/manifest.py verify            — проверить подписи публичным ключом
 
 Ключи: приватный — Base64 PKCS#8 DER, публичный — Base64 X.509 DER
@@ -27,6 +27,7 @@ MANIFEST = os.path.join(ROOT, "manifest.json")
 SIG = MANIFEST + ".sig"
 MOD_PROPS = os.path.join(ROOT, "mod", "ModSync", "gradle.properties")
 PIXELUI_PROPS = os.path.join(ROOT, "mod", "PixelUI", "gradle.properties")
+SKYICON_PROPS = os.path.join(ROOT, "mod", "SkyIcon", "gradle.properties")
 # Список плагинов для PluginSync (отдельный файл, чтобы не менять хеш модов клиента)
 PLUGINS = os.path.join(ROOT, "plugins.json")
 PLUGINS_SIG = PLUGINS + ".sig"
@@ -66,6 +67,8 @@ def gradle_kts_version(rel):
 def subst_all():
     return {
         "modsync": modsync_version(), "pixelui": modsync_version(PIXELUI_PROPS),
+        "skyicon": modsync_version(SKYICON_PROPS),
+        "nightvote": gradle_kts_version("plugin/NightVote"),
         "modgate": gradle_kts_version("plugin/ModGate"),
         "pixelui_paper": gradle_kts_version("plugin/PixelUI"),
         "pluginsync": gradle_kts_version("plugin/PluginSync"),
@@ -237,7 +240,7 @@ def keygen():
 
 
 def targets():
-    """Файлы, которые нужно подписать/проверить."""
+    """Файлы, которые нужно подписать/про��ерить."""
     return [(p, sp) for p, sp in ((MANIFEST, SIG), (PLUGINS, PLUGINS_SIG)) if os.path.exists(p)]
 
 
