@@ -11,7 +11,10 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -78,7 +81,21 @@ public final class HandshakeSender {
     private static HandshakePayload build() throws Exception {
         UpdateManager um = UpdateManager.get();
         List<ModsHasher.ModFile> mods = ModsHasher.scan(FabricLoader.getInstance().getGameDir().resolve("mods"));
-        String hash = ModsHasher.listHash(mods, um.optionalShas());
+        // В хеш идут ТОЛЬКО моды из сборки сервера. Свои моды игрока (мини-карта, шейдеры и т.п.)
+        // не учитываются: сервер проверяет лишь, что все нужные моды есть и нужных версий.
+        List<ModsHasher.ModFile> forHash = mods;
+        var manifest = um.lastManifest();
+        if (manifest != null) {
+            Set<String> required = new HashSet<>();
+            for (var e : manifest.mods()) required.add(e.sha256().toLowerCase(Locale.ROOT));
+            Set<String> seen = new HashSet<>();
+            forHash = new ArrayList<>();
+            for (ModsHasher.ModFile f : mods) {
+                String s = f.sha256().toLowerCase(Locale.ROOT);
+                if (required.contains(s) && seen.add(s)) forHash.add(f); // дубликаты не считаем
+            }
+        }
+        String hash = ModsHasher.listHash(forHash, um.optionalShas());
         // Список файлов — для /modgate status. Ограничиваем, чтобы влезть в лимит пакета (32 КБ)
         List<String> files = new ArrayList<>();
         for (ModsHasher.ModFile f : mods) {

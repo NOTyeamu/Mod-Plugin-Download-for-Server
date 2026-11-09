@@ -69,7 +69,7 @@ public record GateConfig(
                 c.getString("messages.reasons.no-mod", "нет мода"),
                 c.getString("messages.reasons.outdated-mod", "мод устарел"),
                 c.getString("messages.reasons.outdated-manifest", "сборка устарела"),
-                c.getString("messages.reasons.foreign-mods", "чужие моды"),
+                c.getString("messages.reasons.foreign-mods", "не хватает модов сборки"),
                 c.getString("messages.reasons.bad-handshake", "плохие данные"),
                 c.getString("messages.quarantine", "<reason> <url>"),
                 c.getString("messages.warn", "<reason> <url>"),
