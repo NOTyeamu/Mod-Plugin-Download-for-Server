@@ -64,7 +64,28 @@ public final class PixelUI {
         return PixelUIPlugin.get().service().openedMenu(player);
     }
 
-    /** Убрать все уведомления и плашки игрока. */
+    /** Задать вопрос «Да (Y) / Нет (N)». Тот же id заменяет предыдущий вопрос (он получит CANCELLED). */
+    public static void prompt(Player player, PixelPrompt prompt) {
+        PixelUIPlugin.get().service().prompt(player, prompt);
+    }
+
+    /** Быстрый вопрос: ответ придёт в callback (YES / NO / TIMEOUT / CANCELLED). */
+    public static void ask(Player player, String id, String question, java.util.function.Consumer<PixelAnswer> callback) {
+        prompt(player, PixelPrompt.builder(id).question(question)
+                .onAnswer((p, a) -> callback.accept(a)).build());
+    }
+
+    /** id = null — отменить все вопросы игрока. */
+    public static void cancelPrompt(Player player, String id) {
+        PixelUIPlugin.get().service().cancelPrompt(player, id);
+    }
+
+    /** Ждёт ли игрок ответа на вопрос (id = null — на любой). */
+    public static boolean hasPrompt(Player player, String id) {
+        return PixelUIPlugin.get().service().hasPrompt(player, id);
+    }
+
+    /** Убрать все уведомления, плашки и вопросы игрока. */
     public static void clear(Player player) {
         PixelUIPlugin.get().service().clear(player);
     }

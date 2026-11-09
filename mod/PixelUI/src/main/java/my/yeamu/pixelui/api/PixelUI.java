@@ -1,6 +1,8 @@
 package my.yeamu.pixelui.api;
 
 import my.yeamu.pixelui.hud.PixelHud;
+import my.yeamu.pixelui.hud.PromptHud;
+import java.util.function.Consumer;
 import my.yeamu.pixelui.net.PixelNet;
 import my.yeamu.pixelui.render.PixelIcons;
 import my.yeamu.pixelui.screen.MenuScreen;
@@ -57,9 +59,27 @@ public final class PixelUI {
         });
     }
 
-    /** Убрать все уведомления и плашки. */
+    /**
+     * Задать вопрос «Да (Y) / Нет (N)». Ответ придёт в callback в потоке клиента:
+     * YES, NO, TIMEOUT или CANCELLED. На сервер ничего не уходит.
+     */
+    public static void prompt(Prompt prompt, Consumer<PromptAnswer> callback) {
+        run(() -> PromptHud.show(prompt, false, callback));
+    }
+
+    /** Убрать свой вопрос по id (null — все локальные вопросы). Callback получит CANCELLED. */
+    public static void cancelPrompt(String id) {
+        run(() -> PromptHud.cancel(id, false, true));
+    }
+
+    /** Есть ли сейчас вопрос на экране или в очереди (только из потока клиента). */
+    public static boolean hasPrompt() {
+        return PromptHud.active();
+    }
+
+    /** Убрать все уведомления, плашки и свои вопросы. */
     public static void clear() {
-        run(() -> PixelHud.clear(false));
+        run(() -> { PixelHud.clear(false); PromptHud.cancel(null, false, true); });
     }
 
     /** Добавить свою пиксельную иконку (строки из символов палитры, см. PixelIcons). */

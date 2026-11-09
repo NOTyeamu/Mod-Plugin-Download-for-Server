@@ -50,6 +50,8 @@ public final class PixelHud {
     private static final List<Toast> TOASTS = new ArrayList<>();
     private static final List<Bar> BARS = new ArrayList<>();
     private static long lastFrame;
+    /** Сколько пикселей сверху заняли плашки в прошлом кадре (вопросы встают ниже). */
+    public static int topUsed;
 
     private PixelHud() {}
 
@@ -120,12 +122,12 @@ public final class PixelHud {
         float dt = Math.min(0.1f, Math.max(0f, (now - lastFrame) / 1000f));
         lastFrame = now;
         MinecraftClient mc = MinecraftClient.getInstance();
-        if (TOASTS.isEmpty() && BARS.isEmpty()) return;
+        if (TOASTS.isEmpty() && BARS.isEmpty()) { topUsed = 0; return; }
         if (mc.options.hudHidden) return;
         float follow = 1f - (float) Math.exp(-dt * 14f); // плавное «догоняние» целевой позиции
         int sw = c.getScaledWindowWidth(), sh = c.getScaledWindowHeight();
         TextRenderer tr = mc.textRenderer;
-        int topUsed = renderBars(c, tr, sw, sh, now, follow);
+        topUsed = renderBars(c, tr, sw, sh, now, follow);
         renderToasts(c, tr, sw, sh, now, follow, topUsed);
     }
 

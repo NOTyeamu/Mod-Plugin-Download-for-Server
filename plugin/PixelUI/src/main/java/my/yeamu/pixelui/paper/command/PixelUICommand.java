@@ -1,7 +1,9 @@
 package my.yeamu.pixelui.paper.command;
 
 import my.yeamu.pixelui.paper.PixelUIPlugin;
+import my.yeamu.pixelui.paper.api.PixelAnswer;
 import my.yeamu.pixelui.paper.api.PixelBanner;
+import my.yeamu.pixelui.paper.api.PixelPrompt;
 import my.yeamu.pixelui.paper.api.PixelButtonStyle;
 import my.yeamu.pixelui.paper.api.PixelIcon;
 import my.yeamu.pixelui.paper.api.PixelMenu;
@@ -25,12 +27,12 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * /pixelui notify|banner|unbanner|clear|demo|status|reload
- * /pixelui click — служебная, её вызывают кнопки чат-меню (доступна всем).
+ * /pixelui notify|banner|unbanner|prompt|clear|demo|status|reload
+ * /pixelui click и /pixelui answer — служебные, их вызывают кнопки в чате (доступны всем).
  */
 public final class PixelUICommand implements TabExecutor {
 
-    private static final List<String> SUBS = List.of("notify", "banner", "unbanner", "clear", "demo", "status", "reload");
+    private static final List<String> SUBS = List.of("notify", "banner", "unbanner", "prompt", "clear", "demo", "status", "reload");
     private static final List<String> THEMES = List.of("dark", "stone", "success", "error", "warning", "info", "gold", "ender", "nether");
 
     private final PixelUIPlugin plugin;
@@ -45,6 +47,14 @@ public final class PixelUICommand implements TabExecutor {
             if (s instanceof Player p && a.length >= 3) plugin.service().clickByToken(p, a[1], a[2]);
             return true;
         }
+        if (a.length >= 1 && a[0].equalsIgnoreCase("answer")) {
+            if (s instanceof Player p && a.length >= 3) {
+                if (!plugin.service().answerByToken(p, a[1], a[2].equalsIgnoreCase("yes"))) {
+                    msg(s, "&7Этот вопрос уже неактуален");
+                }
+            }
+            return true;
+        }
         if (!s.hasPermission("pixelui.admin")) {
             msg(s, "&cНет права pixelui.admin");
             return true;
@@ -56,6 +66,7 @@ public final class PixelUICommand implements TabExecutor {
         switch (a[0].toLowerCase(Locale.ROOT)) {
             case "notify" -> notifyCmd(s, a);
             case "banner" -> bannerCmd(s, a);
+            case "prompt" -> promptCmd(s, a);
             case "unbanner" -> {
                 if (a.length < 2) { msg(s, "&e/pixelui unbanner <игрок|*> [id]"); return true; }
                 for (Player p : targets(s, a[1])) PixelUI.removeBanner(p, a.length >= 3 ? a[2] : null);
@@ -97,6 +108,7 @@ public final class PixelUICommand implements TabExecutor {
         msg(s, "&e/" + label + " notify <игрок|*> <тема> <заголовок | текст>");
         msg(s, "&e/" + label + " banner <игрок|*> <id> <секунд, 0 = навсегда> <текст>");
         msg(s, "&e/" + label + " unbanner <игрок|*> [id]&7, &e/" + label + " clear <игрок|*>");
+        msg(s, "&e/" + label + " prompt <игрок|*> <секунд> <вопрос | пояснение>&7 — вопрос Да/Нет");
         msg(s, "&e/" + label + " demo [игрок]&7, &e/" + label + " status [игрок]&7, &e/" + label + " reload");
     }
 
@@ -128,6 +140,34 @@ public final class PixelUICommand implements TabExecutor {
         Collection<Player> t = targets(s, a[1]);
         for (Player p : t) PixelUI.banner(p, b);
         msg(s, "&aОтправлено: " + t.size());
+    }
+
+    /** Тестовый вопрос: ответ придёт отправителю команды. */
+    private void promptCmd(CommandSender s, String[] a) {
+        if (a.length < 4) { msg(s, "&e/pixelui prompt <игрок|*> <секунд, 0 = без лимита> <вопрос | пояснение>"); return; }
+        long sec;
+        try {
+            sec = Long.parseLong(a[2]);
+        } catch (NumberFormatException e) {
+            msg(s, "&cСекунды — число");
+            return;
+        }
+        String all = String.join(" ", Arrays.copyOfRange(a, 3, a.length));
+        int bar = all.indexOf('|');
+        String q = bar < 0 ? all : all.substring(0, bar).trim();
+        String text = bar < 0 ? "" : all.substring(bar + 1).trim().replace("\\n", "\n");
+        PixelPrompt pr = PixelPrompt.builder("admin-test").question(q).text(text).theme(PixelTheme.INFO)
+                .icon(PixelIcon.BELL).timeout(sec * 1000L)
+                .onAnswer((pl, ans) -> {
+                    if (ans != PixelAnswer.CANCELLED) msg(s, "&7" + pl.getName() + " ответил: " + switch (ans) {
+                        case YES -> "&aДа";
+                        case NO -> "&cНет";
+                        default -> "&eвремя вышло";
+                    });
+                }).build();
+        Collection<Player> t = targets(s, a[1]);
+        for (Player p : t) PixelUI.prompt(p, pr);
+        msg(s, "&aВопрос отправлен: " + t.size());
     }
 
     private static String iconFor(String theme) {
@@ -177,8 +217,23 @@ public final class PixelUICommand implements TabExecutor {
             }
         }.runTaskTimer(plugin, 20L, 10L);
 
-        // Меню
+        // Вопрос Да/Нет: «Да» откроет меню
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!p.isOnline()) return;
+            PixelPrompt.builder("pixelui-demo").question("&eОткрыть демо-меню?")
+                    .text("&7Ответьте клавишей прямо в игре")
+                    .icon(PixelIcon.STAR).theme(PixelTheme.ENDER).timeout(15_000)
+                    .onYes(this::demoMenu)
+                    .onNo(pl -> PixelUI.notify(pl, PixelNotification.builder().title("Хорошо")
+                            .text("Меню можно открыть позже: /pixelui demo").icon(PixelIcon.INFO).theme(PixelTheme.INFO).build()))
+                    .onTimeout(pl -> PixelUI.notify(pl, PixelNotification.builder().title("&eВремя вышло")
+                            .icon(PixelIcon.CLOCK).theme(PixelTheme.WARNING).build()))
+                    .send(p);
+        }, 70L);
+    }
+
+    private void demoMenu(Player p) {
+        Bukkit.getScheduler().runTask(plugin, () -> {
             if (!p.isOnline()) return;
             PixelMenu.builder("pixelui-demo").title("&6Демо PixelUI").icon(PixelIcon.STAR).theme(PixelTheme.DARK)
                     .columns(2).width(240)
@@ -193,7 +248,7 @@ public final class PixelUICommand implements TabExecutor {
                     .button("locked", "Закрыто", b -> b.enabled(false).icon(PixelIcon.SHIELD))
                     .button("close", "Закрыть", b -> b.style(PixelButtonStyle.DANGER).icon(PixelIcon.CROSS).closes())
                     .open(p);
-        }, 80L);
+        });
     }
 
     private static Collection<Player> targets(CommandSender s, String arg) {

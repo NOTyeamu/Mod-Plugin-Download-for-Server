@@ -2,7 +2,12 @@ package my.yeamu.pixelui.paper.internal;
 
 import com.google.gson.JsonObject;
 import my.yeamu.pixelui.paper.PixelUIPlugin;
+import my.yeamu.pixelui.paper.api.PixelAnswer;
 import my.yeamu.pixelui.paper.api.PixelBanner;
+import my.yeamu.pixelui.paper.api.PixelPrompt;
+import my.yeamu.pixelui.paper.api.event.PixelPromptAnswerEvent;
+import org.bukkit.scheduler.BukkitTask;
+import java.util.ArrayList;
 import my.yeamu.pixelui.paper.api.PixelMenu;
 import my.yeamu.pixelui.paper.api.PixelNotification;
 import my.yeamu.pixelui.paper.api.event.PixelClientReadyEvent;
@@ -51,6 +56,21 @@ public final class PixelService {
     private final Map<UUID, String> versions = new ConcurrentHashMap<>();
     private final Map<UUID, OpenMenu> menus = new ConcurrentHashMap<>();
     private final Map<UUID, Map<String, BarState>> bars = new ConcurrentHashMap<>();
+    private final Map<UUID, Map<String, PromptState>> prompts = new ConcurrentHashMap<>();
+
+    /** Активный вопрос: token защищает чат-кнопки, timer — серверный тайм-аут. */
+    private static final class PromptState {
+        final PixelPrompt prompt;
+        final String token;
+        final boolean fallback;
+        BukkitTask timer;
+
+        PromptState(PixelPrompt prompt, String token, boolean fallback) {
+            this.prompt = prompt;
+            this.token = token;
+            this.fallback = fallback;
+        }
+    }
 
     public PixelService(PixelUIPlugin plugin) {
         this.plugin = plugin;
@@ -207,7 +227,138 @@ public final class PixelService {
                 send(p, o);
             }
             removeBar(p, null);
+            cancelAllPrompts(p);
         });
+    }
+
+    // ---------------------------------------------------------------- вопросы Да/Нет
+
+    public boolean hasPrompt(Player p, String id) {
+        Map<String, PromptState> map = prompts.get(p.getUniqueId());
+        if (map == null || map.isEmpty()) return false;
+        return id == null || map.containsKey(id);
+    }
+
+    public void prompt(Player p, PixelPrompt pr) {
+        sync(() -> {
+            if (!p.isOnline()) return;
+            Map<String, PromptState> map = prompts.computeIfAbsent(p.getUniqueId(), k -> new HashMap<>());
+            PromptState old = map.get(pr.id());
+            if (old != null) resolve(p, old, PixelAnswer.CANCELLED); // клиент сам заменит вопрос с тем же id
+            boolean mod = hasMod(p);
+            if (!mod && "none".equals(plugin.settings().promptFallback())) {
+                resolve(p, new PromptState(pr, "", true), PixelAnswer.CANCELLED);
+                return;
+            }
+            String token = Long.toString(ThreadLocalRandom.current().nextLong() & Long.MAX_VALUE, 36);
+            PromptState st = new PromptState(pr, token, !mod);
+            map.put(pr.id(), st);
+            if (mod) send(p, pr.toJson());
+            else {
+                sendChatPrompt(p, pr, token);
+                playSound(p, pr.sound(), 1f);
+            }
+            if (pr.timeoutMs() > 0) {
+                // Клиент сам пришлёт timeout; серверный таймер — страховка (+3 с, вопрос мог ждать в очереди)
+                long ms = pr.timeoutMs() + (mod ? 3000L : 0L);
+                st.timer = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    Map<String, PromptState> m = prompts.get(p.getUniqueId());
+                    if (m == null || m.get(pr.id()) != st) return;
+                    if (st.fallback) p.sendMessage(Component.text("⌛ Время на ответ вышло", NamedTextColor.GRAY));
+                    else cancelOnClient(p, pr.id());
+                    resolve(p, st, PixelAnswer.TIMEOUT);
+                }, Math.max(1L, ms / 50L));
+            }
+        });
+    }
+
+    /** Запасной вопрос в чате: текст + кликабельные [Да] [Нет]. */
+    private void sendChatPrompt(Player p, PixelPrompt pr, String token) {
+        NamedTextColor accent = pr.theme().chatColor();
+        Component sep = Component.text("■■■■■■■■■■■■■■■■■■■■", NamedTextColor.DARK_GRAY);
+        p.sendMessage(sep);
+        p.sendMessage(Component.text("? ", accent, TextDecoration.BOLD)
+                .append(Txt.component(pr.question()).decoration(TextDecoration.BOLD, false)));
+        if (!pr.text().isEmpty()) {
+            for (String line : pr.text().replace("\\n", "\n").split("\n")) {
+                p.sendMessage(Txt.component(line).colorIfAbsent(NamedTextColor.GRAY));
+            }
+        }
+        Component yes = Component.text("[", NamedTextColor.GREEN).append(Txt.component(pr.yesLabel()))
+                .append(Component.text("]", NamedTextColor.GREEN))
+                .clickEvent(ClickEvent.runCommand("/pixelui answer " + token + " yes"))
+                .hoverEvent(HoverEvent.showText(Component.text("Нажмите, чтобы ответить", NamedTextColor.GRAY)));
+        Component no = Component.text("[", NamedTextColor.RED).append(Txt.component(pr.noLabel()))
+                .append(Component.text("]", NamedTextColor.RED))
+                .clickEvent(ClickEvent.runCommand("/pixelui answer " + token + " no"))
+                .hoverEvent(HoverEvent.showText(Component.text("Нажмите, чтобы ответить", NamedTextColor.GRAY)));
+        Component row = yes.append(Component.text("  ")).append(no);
+        if (pr.timeoutMs() > 0) {
+            row = row.append(Component.text("  (" + Math.max(1, pr.timeoutMs() / 1000) + " с)", NamedTextColor.DARK_GRAY));
+        }
+        p.sendMessage(row);
+        p.sendMessage(sep);
+    }
+
+    private void cancelOnClient(Player p, String id) {
+        if (!hasMod(p)) return;
+        JsonObject o = new JsonObject();
+        o.addProperty("type", "prompt_cancel");
+        if (id != null) o.addProperty("id", id);
+        send(p, o);
+    }
+
+    /** id = null — все вопросы игрока. Обработчики получат CANCELLED. */
+    public void cancelPrompt(Player p, String id) {
+        sync(() -> {
+            Map<String, PromptState> map = prompts.get(p.getUniqueId());
+            if (map == null || map.isEmpty()) return;
+            cancelOnClient(p, id);
+            for (PromptState st : new ArrayList<>(map.values())) {
+                if (id == null || st.prompt.id().equals(id)) resolve(p, st, PixelAnswer.CANCELLED);
+            }
+        });
+    }
+
+    /** Ответ из чата (команда /pixelui answer). */
+    public boolean answerByToken(Player p, String token, boolean yes) {
+        Map<String, PromptState> map = prompts.get(p.getUniqueId());
+        if (map == null) return false;
+        for (PromptState st : new ArrayList<>(map.values())) {
+            if (st.fallback && st.token.equals(token)) {
+                resolve(p, st, yes ? PixelAnswer.YES : PixelAnswer.NO);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Завершить вопрос ровно один раз: событие + обработчики. */
+    private void resolve(Player p, PromptState st, PixelAnswer answer) {
+        Map<String, PromptState> map = prompts.get(p.getUniqueId());
+        if (map != null && !map.remove(st.prompt.id(), st) && !st.token.isEmpty()) return; // уже завершён
+        if (st.timer != null) st.timer.cancel();
+        PixelPrompt pr = st.prompt;
+        PixelPromptAnswerEvent ev = new PixelPromptAnswerEvent(p, pr, answer, st.fallback);
+        Bukkit.getPluginManager().callEvent(ev);
+        if (ev.isCancelled()) return;
+        try {
+            switch (answer) {
+                case YES -> { if (pr.onYes() != null) pr.onYes().accept(p); }
+                case NO -> { if (pr.onNo() != null) pr.onNo().accept(p); }
+                case TIMEOUT -> { if (pr.onTimeout() != null) pr.onTimeout().accept(p); }
+                default -> { }
+            }
+            if (pr.onAnswer() != null) pr.onAnswer().accept(p, answer);
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.WARNING, "Ошибка в обработчике вопроса " + pr.id(), e);
+        }
+    }
+
+    private void cancelAllPrompts(Player p) {
+        Map<String, PromptState> map = prompts.get(p.getUniqueId());
+        if (map == null) return;
+        for (PromptState st : new ArrayList<>(map.values())) resolve(p, st, PixelAnswer.CANCELLED);
     }
 
     // ---------------------------------------------------------------- меню
@@ -334,6 +485,16 @@ public final class PixelService {
                     menus.remove(p.getUniqueId(), m);
                     fireClose(p, m.menu(), PixelMenuCloseEvent.Reason.PLAYER);
                 }
+                case "answer" -> {
+                    Map<String, PromptState> map = prompts.get(p.getUniqueId());
+                    if (map == null) return;
+                    PromptState st = map.get(o.get("id").getAsString());
+                    if (st == null || st.fallback) return;
+                    PixelAnswer a = PixelAnswer.parse(o.get("answer").getAsString());
+                    // Клиент может прислать только yes/no/timeout; отмена — дело сервера
+                    if (a == null || a == PixelAnswer.CANCELLED) return;
+                    resolve(p, st, a);
+                }
                 default -> { }
             }
         } catch (Exception e) {
@@ -344,6 +505,8 @@ public final class PixelService {
     public void quit(Player p) {
         OpenMenu m = menus.remove(p.getUniqueId());
         if (m != null) fireClose(p, m.menu(), PixelMenuCloseEvent.Reason.QUIT);
+        cancelAllPrompts(p);
+        prompts.remove(p.getUniqueId());
         versions.remove(p.getUniqueId());
         bars.remove(p.getUniqueId());
     }
@@ -352,7 +515,10 @@ public final class PixelService {
         for (Player p : Bukkit.getOnlinePlayers()) {
             removeBar(p, null);
             if (menus.containsKey(p.getUniqueId())) closeMenu(p);
+            cancelOnClient(p, null);
+            cancelAllPrompts(p);
         }
+        prompts.clear();
         menus.clear();
         bars.clear();
         versions.clear();

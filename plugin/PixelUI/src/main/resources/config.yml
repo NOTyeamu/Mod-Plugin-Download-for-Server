@@ -9,6 +9,8 @@ fallback:
   banner: bossbar
   # Меню без мода: chat (кликабельные кнопки в чате) | none
   menu: chat
+  # Вопросы Да/Нет без мода: chat (кнопки [Да] [Нет] в чате) | none (сразу CANCELLED)
+  prompt: chat
 
 # Писать в лог, когда игрок с модом PixelUI зашёл (и версию мода)
 log-hello: true

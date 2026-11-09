@@ -4,8 +4,8 @@ PixelUI состоит из двух частей:
 
 | Часть | Файл | Куда |
 |---|---|---|
-| Клиентский мод (Fabric 1.21.11) | `PixelUI-1.0.0.jar` | ставится сам через ModSync |
-| Серверный плагин (Paper 1.21.11) | `PixelUI-Paper-1.0.0.jar` | `plugins/` |
+| Клиентский мод (Fabric 1.21.11) | `PixelUI-1.1.0.jar` | ставится сам через ModSync |
+| Серверный плагин (Paper 1.21.11) | `PixelUI-Paper-1.1.0.jar` | `plugins/` |
 
 Мод рисует настоящий кастомный интерфейс: всплывающие уведомления (тосты), плашки и меню-экраны в пиксельном стиле.
 Плагин даёт API другим плагинам. Если у игрока нет мода, плагин показывает запасной вариант (чат / actionbar / title / bossbar).
@@ -18,7 +18,7 @@ PixelUI состоит из двух частей:
 depend: [PixelUI]
 ```
 
-Gradle: `compileOnly(files("libs/PixelUI-Paper-1.0.0.jar"))`.
+Gradle: `compileOnly(files("libs/PixelUI-Paper-1.1.0.jar"))`.
 
 ## Плагин: уведомления
 
@@ -75,6 +75,54 @@ PixelMenu.builder("shop")
 - `PixelMenuClickEvent` — нажата кнопка, можно отменить.
 - `PixelMenuCloseEvent` — меню закрыто, причина: PLAYER, BUTTON, REPLACED, SERVER, QUIT.
 
+## Плагин: вопросы Да (Y) / Нет (N)
+
+Плашка с вопросом: игрок с модом отвечает клавишами прямо в игре (без открытия экрана),
+игрок без мода — кнопками `[Да] [Нет]` в чате (`fallback.prompt: chat`).
+
+```java
+PixelPrompt.builder("clan-invite")
+    .question("&eВас пригласили в клан &6Dragons")
+    .text("Принять приглашение?")
+    .icon(PixelIcon.SHIELD).theme(PixelTheme.GOLD)
+    .position(PixelPosition.TOP_CENTER)      // TOP_CENTER | CENTER | BOTTOM_CENTER
+    .timeout(Duration.ofSeconds(20))         // 0 = без лимита
+    .yesLabel("Принять").noLabel("Отказать")
+    .keys('Y', 'N')                          // свои клавиши: A–Z, 0–9
+    .colors(0x3FA535, 0xC83737)              // цвета клавиш
+    .timerBar(true).width(260).sound("minecraft:block.note_block.pling")
+    .onYes(p -> clans.join(p, "Dragons"))
+    .onNo(p -> p.sendMessage("Отказано"))
+    .onTimeout(p -> p.sendMessage("Время вышло"))
+    .onAnswer((p, answer) -> log(p, answer)) // YES / NO / TIMEOUT / CANCELLED
+    .send(player);
+
+// Коротко:
+PixelUI.ask(player, "tp-request", "&bПринять телепорт от Steve?", answer -> { ... });
+PixelUI.cancelPrompt(player, "tp-request");   // null — все вопросы
+PixelUI.hasPrompt(player, "tp-request");
+```
+
+- Тот же `id` заменяет старый вопрос (старый получает `CANCELLED`).
+- Несколько разных вопросов встают в очередь (до 16), на плашке виден счётчик `+N`.
+- Засчитывается только первый ответ; сервер страхует тайм-аут своим таймером.
+- Клавиши читаются, только когда не открыт экран (чат, инвентарь) — случайно ответить, печатая в чате, нельзя.
+- Событие `PixelPromptAnswerEvent` (getPlayer, getPromptId, getAnswer, isFallback) приходит для вопросов любого плагина.
+  Если отменить событие, обработчики onYes/onNo/… не вызываются.
+
+### Клиентский мод: вопросы из других модов
+
+```java
+PixelUI.prompt(Prompt.builder("mymod-confirm")
+        .question("Сбросить настройки?").text("Действие нельзя отменить")
+        .icon("warn").theme(Theme.WARNING).timeout(10_000)
+        .yesLabel("Сбросить").yesKey('Y').noKey('N')
+        .build(),
+    answer -> { if (answer == PromptAnswer.YES) resetConfig(); });
+PixelUI.cancelPrompt("mymod-confirm");
+PixelUI.hasPrompt();
+```
+
 ## Справочник
 
 - Темы: `dark, stone, success, error, warning, info, gold, ender, nether`; свои цвета: `accent, bg, outline, light, dark, title, text` (0xRRGGBB или 0xAARRGGBB), `shadow(bool)`.
@@ -124,3 +172,8 @@ log-hello: true
 - клиент → сервер: `hello {version}`, `click {menu, button}`, `close {menu}`.
 
 HEX-цвета в тексте округляются до 16 стандартных; HEX в темах работает полностью.
+
+Вопросы Да/Нет (с 1.1.0):
+
+- сервер → клиент: `{"type":"prompt", "id", "question", "text", "icon", "theme", "position", "timeout", "yes", "no", "yesKey", "noKey", "yesColor", "noColor", "timerBar", "width", "sound"}`, `{"type":"prompt_cancel", "id"?}`
+- клиент → сервер: `{"type":"answer", "id", "answer": "yes"|"no"|"timeout"}`

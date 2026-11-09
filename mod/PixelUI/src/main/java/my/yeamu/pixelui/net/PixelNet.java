@@ -7,6 +7,8 @@ import my.yeamu.pixelui.api.Banner;
 import my.yeamu.pixelui.api.Menu;
 import my.yeamu.pixelui.api.Notification;
 import my.yeamu.pixelui.hud.PixelHud;
+import my.yeamu.pixelui.hud.PromptHud;
+import my.yeamu.pixelui.api.Prompt;
 import my.yeamu.pixelui.screen.MenuScreen;
 import net.fabricmc.fabric.api.client.networking.v1.C2SPlayChannelEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
@@ -17,8 +19,8 @@ import net.minecraft.client.MinecraftClient;
 /**
  * Сеть PixelUI: принимаем команды от плагина и отсылаем нажатия.
  *
- * Сервер → клиент: notify, banner, banner_remove, menu, menu_close, clear.
- * Клиент → сервер: hello {version}, click {menu, button}, close {menu}.
+ * Сервер → клиент: notify, banner, banner_remove, menu, menu_close, prompt, prompt_cancel, clear.
+ * Клиент → сервер: hello {version}, click {menu, button}, close {menu}, answer {id, answer}.
  */
 public final class PixelNet {
 
@@ -45,7 +47,7 @@ public final class PixelNet {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             helloSent = false;
             serverReady = false;
-            client.execute(() -> PixelHud.clear(true));
+            client.execute(() -> { PixelHud.clear(true); PromptHud.clear(true); });
         });
     }
 
@@ -78,6 +80,14 @@ public final class PixelNet {
         send(o);
     }
 
+    public static void sendAnswer(String id, String answer) {
+        JsonObject o = new JsonObject();
+        o.addProperty("type", "answer");
+        o.addProperty("id", id);
+        o.addProperty("answer", answer);
+        send(o);
+    }
+
     private static void send(JsonObject o) {
         if (ClientPlayNetworking.canSend(PixelPayload.ID)) {
             ClientPlayNetworking.send(new PixelPayload(o.toString()));
@@ -98,7 +108,15 @@ public final class PixelNet {
                 case "notify" -> PixelHud.notify(Notification.fromJson(o), true);
                 case "banner" -> PixelHud.banner(Banner.fromJson(o), true);
                 case "banner_remove" -> PixelHud.removeBanner(o.has("id") ? o.get("id").getAsString() : null);
-                case "clear" -> PixelHud.clear(true);
+                case "clear" -> { PixelHud.clear(true); PromptHud.clear(true); }
+                case "prompt" -> {
+                    Prompt p = Prompt.fromJson(o);
+                    // Ответ уходит на сервер; отмену сервер и так знает — её не шлём
+                    PromptHud.show(p, true, a -> {
+                        if (a != my.yeamu.pixelui.api.PromptAnswer.CANCELLED) sendAnswer(p.id, a.id());
+                    });
+                }
+                case "prompt_cancel" -> PromptHud.cancel(o.has("id") ? o.get("id").getAsString() : null, true, false);
                 case "menu" -> {
                     Menu m = Menu.fromJson(o);
                     if (client.currentScreen instanceof MenuScreen old) old.markReplaced();
