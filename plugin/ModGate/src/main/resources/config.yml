@@ -1,0 +1,82 @@
+# ============================================================
+#  ModGate — проверка клиентского мода ModSync
+#  Все времена указаны в секундах, если не сказано иное.
+# ============================================================
+
+# Режим работы:
+#   strict — карантин и кик игроков без нужного мода
+#   warn   — только предупреждение в чате (без карантина и кика)
+#   off    — плагин ничего не проверяет
+mode: strict
+
+# Адрес сайта: показывается в сообщениях и при кике
+site-url: "https://yeamu.my.id"
+
+manifest:
+  # URL манифеста (только HTTPS!)
+  url: "https://yeamu.my.id/manifest.json"
+  # Как часто перекачивать манифест (в минутах)
+  refresh-minutes: 5
+  # Таймаут HTTP-запроса
+  timeout-seconds: 10
+  # Проверять подпись Ed25519 (файл <url>.sig). Пустая строка — не проверять.
+  public-key: "MCowBQYDK2VwAyEASH15CNNP+UybzhC9J0VyjZ/QEUBFTy/Fbum3wYcYsIM="
+
+timings:
+  # Сколько ждать рукопожатие после входа
+  handshake-timeout: 10
+  # Через сколько секунд после попадания в карантин кикать
+  kick-delay: 30
+  # Как часто повторять сообщение в карантине
+  reminder-interval: 10
+
+checks:
+  # Проверять хеш списка модов (чужие моды не из списка)
+  mods-hash: true
+  # Требовать точное совпадение версии манифеста (иначе — не ниже текущей)
+  exact-manifest-version: false
+
+exemptions:
+  # Ники или UUID игроков, которых не проверяем
+  players:
+    - "ExampleAdmin"
+    - "00000000-0000-0000-0000-000000000000"
+  bedrock:
+    # Пропускать Bedrock-игроков (Geyser/Floodgate)
+    enabled: true
+    # Префикс ников Floodgate (по умолчанию ".")
+    prefix: "."
+    # Дополнительно спрашивать Floodgate API, если он установлен
+    use-floodgate-api: true
+
+log:
+  # Писать журнал входов в plugins/ModGate/joins.log
+  enabled: true
+
+# Сообщения в формате MiniMessage.
+# Плейсхолдеры: <url> — ссылка на сайт, <reason> — причина, <seconds> — секунды до кика,
+# <need> — нужная версия, <have> — версия игрока.
+messages:
+  prefix: "<dark_gray>[<green>ModGate</green>]</dark_gray> "
+  reasons:
+    no-mod: "у вас не установлен мод ModSync"
+    outdated-mod: "мод ModSync устарел (у вас <have>, нужно <need>)"
+    outdated-manifest: "сборка модов устарела (у вас <have>, актуальная <need>)"
+    foreign-mods: "в папке mods есть моды не из списка сервера или не хватает нужных"
+    bad-handshake: "клиент прислал повреждённые данные"
+  quarantine: |-
+    <red><bold>Вход ограничен!</bold></red> Причина: <yellow><reason></yellow>.
+    <gray>Скачайте мод на сайте:</gray> <click:open_url:'<url>'><hover:show_text:'<green>Открыть сайт'><aqua><u><url></u></aqua></hover></click>
+    <gray>Кик через <white><seconds></white> сек.</gray>
+  warn: |-
+    <gold>Внимание!</gold> <yellow><reason></yellow>.
+    <gray>Скачайте актуальную версию:</gray> <click:open_url:'<url>'><aqua><u><url></u></aqua></click>
+  kick: |-
+    <red><bold>ModGate</bold></red>
+
+    <white>Причина: <yellow><reason></yellow></white>
+
+    <gray>Скачайте мод ModSync на сайте:</gray>
+    <aqua><url></aqua>
+  ok: "<green>Мод ModSync проверен, приятной игры!</green>"
+  kick-outdated: "<yellow>Обновитесь: вышла новая сборка модов.</yellow>"

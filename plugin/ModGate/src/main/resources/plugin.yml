@@ -1,0 +1,20 @@
+name: ModGate
+version: '${version}'
+main: my.yeamu.modgate.ModGatePlugin
+api-version: '1.21'
+author: yeamu
+description: Требует клиентский мод ModSync и показывает, где его скачать.
+website: https://yeamu.my.id
+softdepend: [floodgate, Geyser-Spigot]
+commands:
+  modgate:
+    description: Управление ModGate
+    usage: /modgate <status|list|reload|kick-outdated>
+    permission: modgate.admin
+permissions:
+  modgate.admin:
+    description: Доступ к командам /modgate
+    default: op
+  modgate.bypass:
+    description: Вход без клиентского мода
+    default: false
