@@ -512,6 +512,17 @@
     // Яркая пиксельная коробка, цвет зависит от имени мода
     return pixelIcon("box", Math.floor(rng(seed)() * 360));
   }
+  // Пиксельные иконки известных модов (assets/img/mods/<id>.svg). Можно также указать "icon" в манифесте.
+  const MOD_ICONS = { "modsync": "assets/img/mods/modsync.svg", "fabric-api": "assets/img/mods/fabric-api.svg" };
+  function modIcon(mod) {
+    const src = mod.icon || MOD_ICONS[mod.id];
+    if (!src) return itemIcon(hashStr(mod.id || mod.name));
+    const img = new Image();
+    img.alt = ""; img.draggable = false; img.decoding = "async"; img.src = src;
+    // Нет файла — показываем сгенерированную коробку
+    img.onerror = () => img.replaceWith(itemIcon(hashStr(mod.id || mod.name)));
+    return img;
+  }
   const tip = $("#tooltip");
   function showTip(html, e) { tip.innerHTML = html; tip.classList.add("show"); moveTip(e); }
   function moveTip(e) {
@@ -557,7 +568,7 @@
       const s = document.createElement("div");
       s.className = "slot pop"; s.style.animationDelay = (i * 0.05) + "s";
       s.tabIndex = 0;
-      s.append(itemIcon(hashStr(mod.id || mod.name)));
+      s.append(modIcon(mod));
       const html = '<div class="t-name">' + esc(mod.name) + '</div><div class="t-ver">Версия ' + esc(mod.version) + " · " + fmtSize(mod.size) + "</div>"
         + (mod.description ? '<div class="t-desc">' + esc(mod.description) + "</div>" : "")
         + '<div class="t-mod">' + esc(mod.file) + "</div>";

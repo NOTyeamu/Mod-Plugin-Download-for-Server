@@ -221,8 +221,8 @@ code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-siz
   display: grid; place-items: center; transition: background .15s;
 }
 .slot:hover { background: #a8a8a8; }
-.slot canvas { width: 70%; height: 70%; transition: transform .25s var(--ease); }
-.slot:hover canvas { transform: scale(1.15) rotate(-6deg); }
+.slot canvas, .slot img { width: 70%; height: 70%; image-rendering: pixelated; transition: transform .25s var(--ease); }
+.slot:hover canvas, .slot:hover img { transform: scale(1.15) rotate(-6deg); }
 .slot .count { position: absolute; right: 4px; bottom: 1px; font-size: 15px; color: #fff; text-shadow: 2px 2px 0 #3f3f3f; }
 .slot--empty { cursor: default; }
 .slot.pop { animation: pop .5s var(--ease) both; }
