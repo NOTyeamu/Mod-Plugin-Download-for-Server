@@ -286,6 +286,32 @@ final class VoteManager implements Listener {
         wasNight.put(w.getUID(), false);
     }
 
+    /** Тема PixelUI по названию из конфига (неизвестное — ender). */
+    private static PixelTheme theme(String name) {
+        if (name == null) return PixelTheme.ENDER;
+        switch (name.trim().toLowerCase(java.util.Locale.ROOT)) {
+            case "dark": return PixelTheme.DARK;
+            case "stone": return PixelTheme.STONE;
+            case "success": return PixelTheme.SUCCESS;
+            case "error": return PixelTheme.ERROR;
+            case "warning": return PixelTheme.WARNING;
+            case "info": return PixelTheme.INFO;
+            case "gold": return PixelTheme.GOLD;
+            case "nether": return PixelTheme.NETHER;
+            default: return PixelTheme.ENDER;
+        }
+    }
+
+    /** Положение плашки по названию из конфига (неизвестное — TOP_CENTER). */
+    private static PixelPosition position(String name) {
+        if (name == null) return PixelPosition.TOP_CENTER;
+        try {
+            return PixelPosition.valueOf(name.trim().toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            return PixelPosition.TOP_CENTER;
+        }
+    }
+
     private void notifyAll(List<Player> players, String title, String text, String icon, PixelTheme theme) {
         for (Player p : players) {
             PixelUI.notify(p, PixelNotification.builder()
