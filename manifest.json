@@ -1,21 +1,21 @@
 {
-  "version": 2,
-  "generated": "2026-11-09T12:09:57Z",
+  "version": 3,
+  "generated": "2026-11-09T12:35:40Z",
   "format": 1,
   "minecraft": "1.21.11",
   "modsync": {
-    "version": "1.0.0",
-    "minVersion": "1.0.0"
+    "version": "1.1.0",
+    "minVersion": "1.1.0"
   },
   "mods": [
     {
       "id": "modsync",
       "name": "ModSync",
-      "version": "1.0.0",
-      "file": "ModSync-1.0.0.jar",
-      "url": "https://yeamu.my.id/downloads/ModSync-1.0.0.jar",
-      "sha256": "fdf1f6929acc29617327b6dea359f1141d4f00873144cfd6bfd2c250d8448db8",
-      "size": 62116,
+      "version": "1.1.0",
+      "file": "ModSync-1.1.0.jar",
+      "url": "https://yeamu.my.id/downloads/ModSync-1.1.0.jar",
+      "sha256": "341edee024f0ee8dcc98b862c2187300f45a797ad9b4f16636666d075a17d899",
+      "size": 74355,
       "description": "Автообновление модов сервера"
     },
     {
@@ -29,7 +29,11 @@
       "description": "Библиотека, нужная почти всем Fabric-модам"
     }
   ],
-  "remove": [],
+  "remove": [
+    {
+      "file": "ModSync-1.0.0.jar"
+    }
+  ],
   "optional": [],
-  "modsHash": "f0f075d85852be626bec50d4e58bb7f1920eeda3a4d7d9ffc878e544f0769f80"
+  "modsHash": "c74e17fdb53028bca8e236ad5c81ef364c25320960128a7a955d464bb2225737"
 }
