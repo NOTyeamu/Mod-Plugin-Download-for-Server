@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "pixelui",
+  "version": "${version}",
+  "name": "PixelUI",
+  "description": "Кастомные пиксельные уведомления, плашки и меню для серверов yeamu. Вызываются плагином PixelUI на сервере или другими модами через API.",
+  "authors": ["yeamu"],
+  "contact": {
+    "homepage": "https://yeamu.my.id",
+    "sources": "https://github.com/NOTyeamu/Mod-Plugin-Download-for-Server"
+  },
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["my.yeamu.pixelui.PixelUIClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

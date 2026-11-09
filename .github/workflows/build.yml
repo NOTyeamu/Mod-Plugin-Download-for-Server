@@ -1,4 +1,4 @@
-name: Сборка ModGate и ModSync
+name: Сборка ModGate, ModSync и PixelUI
 
 on:
   push:
@@ -48,14 +48,29 @@ jobs:
           JAVA_HOME: ${{ env.JAVA_HOME_25_X64 }}
         run: gradle -p mod/ModSync build --no-daemon --stacktrace
 
+      - name: Сборка мода PixelUI
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME_25_X64 }}
+        run: gradle -p mod/PixelUI build --no-daemon --stacktrace
+
+      - name: Сборка плагина PixelUI-Paper
+        if: hashFiles('plugin/PixelUI/build.gradle.kts') != ''
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME_21_X64 }}
+        run: gradle -p plugin/PixelUI build --no-daemon --stacktrace
+
       - name: Копирую jar в downloads/
         run: |
           mkdir -p downloads
-          rm -f downloads/ModGate-*.jar downloads/ModSync-*.jar
+          rm -f downloads/ModGate-*.jar downloads/ModSync-*.jar downloads/PixelUI-*.jar
           cp plugin/ModGate/build/libs/ModGate-*.jar downloads/
           for f in mod/ModSync/build/libs/ModSync-*.jar; do
             case "$f" in *-sources.jar|*-dev.jar) ;; *) cp "$f" downloads/ ;; esac
           done
+          for f in mod/PixelUI/build/libs/PixelUI-*.jar; do
+            case "$f" in *-sources.jar|*-dev.jar) ;; *) cp "$f" downloads/ ;; esac
+          done
+          if [ -d plugin/PixelUI/build/libs ]; then cp plugin/PixelUI/build/libs/PixelUI-Paper-*.jar downloads/; fi
           ls -la downloads
 
       - uses: actions/upload-artifact@v4

@@ -1,5 +1,5 @@
 {
-  "_comment": "Источник для manifest.json. Редактируйте этот файл, CI соберёт и подпишет manifest.json. {modsync} — версия ModSync из gradle.properties.",
+  "_comment": "Источник для manifest.json. Редактируйте этот файл, CI соберёт и подпишет manifest.json. {modsync}/{pixelui} — версии модов из их gradle.properties.",
   "siteUrl": "https://yeamu.my.id",
   "minecraft": "1.21.11",
   "modsyncMinVersion": "{modsync}",
@@ -10,6 +10,13 @@
       "version": "{modsync}",
       "local": "downloads/ModSync-{modsync}.jar",
       "description": "Автообновление модов сервера"
+    },
+    {
+      "id": "pixelui",
+      "name": "PixelUI",
+      "version": "{pixelui}",
+      "local": "downloads/PixelUI-{pixelui}.jar",
+      "description": "Кастомные пиксельные уведомления, плашки и меню"
     },
     {
       "id": "fabric-api",

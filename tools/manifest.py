@@ -26,6 +26,7 @@ SOURCE = os.path.join(ROOT, "manifest-source.json")
 MANIFEST = os.path.join(ROOT, "manifest.json")
 SIG = MANIFEST + ".sig"
 MOD_PROPS = os.path.join(ROOT, "mod", "ModSync", "gradle.properties")
+PIXELUI_PROPS = os.path.join(ROOT, "mod", "PixelUI", "gradle.properties")
 
 # Должен совпадать с ModSyncConfig.PUBLIC_KEY и manifest.public-key в config.yml плагина
 PUBLIC_KEY = "MCowBQYDK2VwAyEASH15CNNP+UybzhC9J0VyjZ/QEUBFTy/Fbum3wYcYsIM="
@@ -38,14 +39,15 @@ WHITELIST = {
 }
 
 
-def modsync_version():
-    """Версия ModSync из gradle.properties."""
-    with open(MOD_PROPS, encoding="utf-8") as f:
+def modsync_version(props=None):
+    """Версия мода (по умолчанию ModSync) из gradle.properties."""
+    props = props or MOD_PROPS
+    with open(props, encoding="utf-8") as f:
         for line in f:
             m = re.match(r"\s*mod_version\s*=\s*(\S+)", line)
             if m:
                 return m.group(1)
-    raise SystemExit("mod_version не найден в " + MOD_PROPS)
+    raise SystemExit("mod_version не найден в " + props)
 
 
 def sha_and_size(data: bytes):
@@ -68,7 +70,7 @@ def build():
     with open(SOURCE, encoding="utf-8") as f:
         src = json.load(f)
     msv = modsync_version()
-    subst = {"modsync": msv}
+    subst = {"modsync": msv, "pixelui": modsync_version(PIXELUI_PROPS)}
 
     mods = []
     for m in src["mods"]:
