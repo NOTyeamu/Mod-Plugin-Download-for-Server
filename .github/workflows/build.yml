@@ -1,4 +1,4 @@
-name: Сборка ModGate, ModSync и PixelUI
+name: Сборка ModGate, ModSync, PixelUI и PluginSync
 
 on:
   push:
@@ -59,10 +59,15 @@ jobs:
           JAVA_HOME: ${{ env.JAVA_HOME_21_X64 }}
         run: gradle -p plugin/PixelUI build --no-daemon --stacktrace
 
+      - name: Сборка плагина PluginSync
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME_21_X64 }}
+        run: gradle -p plugin/PluginSync build --no-daemon --stacktrace
+
       - name: Копирую jar в downloads/
         run: |
           mkdir -p downloads
-          rm -f downloads/ModGate-*.jar downloads/ModSync-*.jar downloads/PixelUI-*.jar
+          rm -f downloads/ModGate-*.jar downloads/ModSync-*.jar downloads/PixelUI-*.jar downloads/PluginSync-*.jar
           cp plugin/ModGate/build/libs/ModGate-*.jar downloads/
           for f in mod/ModSync/build/libs/ModSync-*.jar; do
             case "$f" in *-sources.jar|*-dev.jar) ;; *) cp "$f" downloads/ ;; esac
@@ -71,6 +76,7 @@ jobs:
             case "$f" in *-sources.jar|*-dev.jar) ;; *) cp "$f" downloads/ ;; esac
           done
           if [ -d plugin/PixelUI/build/libs ]; then cp plugin/PixelUI/build/libs/PixelUI-Paper-*.jar downloads/; fi
+          cp plugin/PluginSync/build/libs/PluginSync-*.jar downloads/
           ls -la downloads
 
       - uses: actions/upload-artifact@v4
@@ -82,12 +88,12 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Сборка manifest.json
+      - name: Сборка manifest.json и plugins.json
         run: |
           pip install --quiet cryptography
           python tools/manifest.py build
 
-      - name: Подпись manifest.json
+      - name: Подпись manifest.json и plugins.json
         env:
           MANIFEST_PRIVATE_KEY: ${{ secrets.MANIFEST_PRIVATE_KEY }}
         run: |
@@ -103,7 +109,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A downloads manifest.json
+          [ -f plugins.json ] && git add plugins.json
           [ -f manifest.json.sig ] && git add manifest.json.sig
+          [ -f plugins.json.sig ] && git add plugins.json.sig
           if git diff --cached --quiet; then
             echo "Изменений нет"
           else

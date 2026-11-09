@@ -7,6 +7,8 @@
 | Сайт | `index.html`, `assets/` | GitHub Pages, стиль Minecraft, скачивание мода |
 | ModGate | `plugin/ModGate` | Плагин Paper 1.21.11: требует клиентский мод |
 | ModSync | `mod/ModSync` | Fabric-мод 1.21.11: ставит и обновляет моды сервера |
+| PluginSync | `plugin/PluginSync` | Плагин Paper 1.21.11: сам обновляет и ставит плагины сервера (и себя) |
+| Список плагинов | `manifest-source.json` (`plugins`) → `plugins.json` + `.sig` | Подписан Ed25519 тем же ключом |
 | Манифест | `manifest-source.json` → `manifest.json` + `.sig` | Список модов, подписанный Ed25519 |
 | Утилита | `tools/manifest.py` | keygen / build / sign / verify |
 | CI | `.github/workflows/build.yml` | Сборка jar, манифест, подпись, публикация |
@@ -63,6 +65,33 @@ URL только HTTPS и только с доменов белого списк
 - Кнопка «Проверить обновления» в главном меню.
 - Если сайт недоступен, можно играть с тем, что установлено (будет предупреждение).
 
+## PluginSync
+
+Плагин, который сам скачивает и обновляет плагины сервера — ModGate, PixelUI, себя и любые внешние.
+
+1. CI собирает плагины и публикует подписанный `https://yeamu.my.id/plugins.json` (имя, версия, URL, SHA-256, размер).
+2. PluginSync при запуске и раз в N минут проверяет подпись, сравнивает с jar в `plugins/`
+   (имя и версия из `plugin.yml`, SHA-256 файла) и скачивает новое/недостающее в `plugins/PluginSync/pending/`
+   (только HTTPS, белый список доменов, проверка размера и SHA-256, временный `.part`-файл).
+3. При остановке сервера старые jar удаляются, новые ставятся в `plugins/`. Если файл занят (Windows) —
+   новый jar кладётся в `plugins/update/`, и Paper заменит его сам при запуске.
+4. Перезапуск: вручную, `restart.when: empty` (когда никого нет) или `always` (с обратным отсчётом).
+
+- Режимы `check.mode`: `auto` (сразу скачивать), `notify` (только сообщать), `off`.
+- Команды (`pluginsync.admin`, алиас `/psync`): `status`, `check`, `update`, `restart [сек]`, `cancel`, `discard`, `reload`.
+- `managed` / `ignore` — какие плагины трогать; `install-missing`, `allow-downgrade`, `max-size-mb`.
+- Уведомления админам — через PixelUI (если установлен) или в чат.
+- Лог: `plugins/PluginSync/updates.log`, кэш списка: `plugins-cache.json` (если сайт недоступен).
+
+Добавить внешний плагин — в раздел `plugins` файла `manifest-source.json` (`name` — как в его `plugin.yml`):
+
+```json
+{ "id": "luckperms", "name": "LuckPerms", "version": "5.5.17",
+  "url": "https://cdn.modrinth.com/data/Vebnzrzj/versions/.../LuckPerms-Bukkit-5.5.17.jar" }
+```
+
+Удалить плагин с сервера: `{"name": "OldPlugin"}` или `{"file": "Old-1.0.jar"}` в `pluginsRemove`.
+
 ## Ограничения
 
 - **Клиент можно подделать.** Модифицированный клиент может отправить «правильное» рукопожатие с любым хешем.
@@ -71,6 +100,9 @@ URL только HTTPS и только с доменов белого списк
 - Исключение Bedrock по префиксу без Floodgate можно обойти, взяв ник с этим префиксом на offline-сервере.
 - Проверка идёт после входа в мир (фаза play), а не в фазе configuration.
 - Ресурспаки, шейдеры и конфиги модов не синхронизируются.
+- PluginSync не меняет плагины «на лету» — новые версии заработают после перезапуска.
+  `restart.method: restart` требует `restart-script` в `spigot.yml` или хостинг с автоперезапуском.
+- Конфиги плагинов PluginSync не трогает — только jar.
 
 ## Идеи
 

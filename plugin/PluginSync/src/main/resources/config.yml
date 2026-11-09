@@ -1,0 +1,63 @@
+# ============================================================
+#  PluginSync — автообновление плагинов сервера
+#  Список плагинов берётся с сайта (plugins.json), подписан Ed25519.
+# ============================================================
+
+manifest:
+  # URL списка плагинов (только HTTPS!)
+  url: "https://yeamu.my.id/plugins.json"
+  # Публичный ключ Ed25519 (тот же, что у ModSync/ModGate). Без верной подписи ничего не скачивается.
+  public-key: "MCowBQYDK2VwAyEASH15CNNP+UybzhC9J0VyjZ/QEUBFTy/Fbum3wYcYsIM="
+  # Таймаут HTTP-запросов (секунды)
+  timeout-seconds: 30
+
+check:
+  # Проверить обновления после запуска сервера
+  on-startup: true
+  # Как часто проверять (минуты, 0 — только при запуске и по команде)
+  interval-minutes: 30
+  # auto   — сразу скачивать обновления
+  # notify — только сообщать админам (скачать: /pluginsync update)
+  # off    — ничего не проверять автоматически
+  mode: auto
+
+# Ставить плагины из списка, которых ещё нет на сервере
+install-missing: true
+# Разрешить откат на более старую версию, если на сайте она ниже установленной
+allow-downgrade: false
+# Если список не пуст — трогать только эти плагины (по имени из plugin.yml)
+managed: []
+# Эти плагины никогда не обновлять и не удалять
+ignore: []
+# Максимальный размер одного jar (МБ)
+max-size-mb: 100
+
+# Скачивать только с этих доменов (и их поддоменов)
+allowed-domains:
+  - yeamu.my.id
+  - github.com
+  - objects.githubusercontent.com
+  - release-assets.githubusercontent.com
+  - raw.githubusercontent.com
+  - cdn.modrinth.com
+  - hangarcdn.papermc.io
+
+# Скачанные jar ждут в plugins/PluginSync/pending/ и ставятся при выключении сервера
+# (сервер не может безопасно заменить работающий плагин «на лету»).
+restart:
+  # Перезапуск после скачивания обновлений:
+  #   never  — ждать ручного перезапуска
+  #   empty  — перезапустить, когда на сервере никого нет
+  #   always — перезапустить с обратным отсчётом
+  when: never
+  # Обратный отсчёт для режима always и команды /pluginsync restart (секунды)
+  countdown: 60
+  # restart — Bukkit restart (нужен restart-script в spigot.yml или хостинг с автоперезапуском)
+  # stop    — просто выключить сервер
+  method: restart
+
+notify:
+  # Сообщать админам (право pluginsync.admin) при входе, что ждут обновления
+  admins-on-join: true
+  # Использовать PixelUI для уведомлений и обратного отсчёта, если он установлен
+  pixelui: true

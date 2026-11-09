@@ -4,9 +4,9 @@
 Утилита для manifest.json сервера yeamu.
 
   python tools/manifest.py keygen            — создать пару ключей Ed25519
-  python tools/manifest.py build             — собрать manifest.json из manifest-source.json
-  python tools/manifest.py sign              — подписать (ключ в переменной MANIFEST_PRIVATE_KEY)
-  python tools/manifest.py verify            — проверить подпись публичным ключом
+  python tools/manifest.py build             — собрать manifest.json (моды) и plugins.json (плагины)
+  python tools/manifest.py sign              — подписать оба (ключ в переменной MANIFEST_PRIVATE_KEY)
+  python tools/manifest.py verify            — проверить подписи публичным ключом
 
 Ключи: приватный — Base64 PKCS#8 DER, публичный — Base64 X.509 DER
 (такой же формат читает Java: PKCS8EncodedKeySpec / X509EncodedKeySpec).
@@ -27,6 +27,9 @@ MANIFEST = os.path.join(ROOT, "manifest.json")
 SIG = MANIFEST + ".sig"
 MOD_PROPS = os.path.join(ROOT, "mod", "ModSync", "gradle.properties")
 PIXELUI_PROPS = os.path.join(ROOT, "mod", "PixelUI", "gradle.properties")
+# Список плагинов для PluginSync (отдельный файл, чтобы не менять хеш модов клиента)
+PLUGINS = os.path.join(ROOT, "plugins.json")
+PLUGINS_SIG = PLUGINS + ".sig"
 
 # Должен совпадать с ModSyncConfig.PUBLIC_KEY и manifest.public-key в config.yml плагина
 PUBLIC_KEY = "MCowBQYDK2VwAyEASH15CNNP+UybzhC9J0VyjZ/QEUBFTy/Fbum3wYcYsIM="
@@ -35,7 +38,7 @@ PUBLIC_KEY = "MCowBQYDK2VwAyEASH15CNNP+UybzhC9J0VyjZ/QEUBFTy/Fbum3wYcYsIM="
 WHITELIST = {
     "yeamu.my.id", "github.com", "objects.githubusercontent.com",
     "release-assets.githubusercontent.com", "raw.githubusercontent.com",
-    "cdn.modrinth.com", "maven.fabricmc.net",
+    "cdn.modrinth.com", "maven.fabricmc.net", "hangarcdn.papermc.io",
 }
 
 
@@ -48,6 +51,92 @@ def modsync_version(props=None):
             if m:
                 return m.group(1)
     raise SystemExit("mod_version не найден в " + props)
+
+
+def gradle_kts_version(rel):
+    """Версия плагина из version = "x" в build.gradle.kts."""
+    path = os.path.join(ROOT, rel, "build.gradle.kts")
+    if not os.path.exists(path):
+        return "0"
+    with open(path, encoding="utf-8") as f:
+        m = re.search(r'^version\s*=\s*"([^"]+)"', f.read(), re.M)
+    return m.group(1) if m else "0"
+
+
+def subst_all():
+    return {
+        "modsync": modsync_version(), "pixelui": modsync_version(PIXELUI_PROPS),
+        "modgate": gradle_kts_version("plugin/ModGate"),
+        "pixelui_paper": gradle_kts_version("plugin/PixelUI"),
+        "pluginsync": gradle_kts_version("plugin/PluginSync"),
+    }
+
+
+def load_entry(src, m, subst):
+    """Вернуть (url, data) для записи с local (файл в репозитории) или url (внешний)."""
+    if "local" in m:
+        rel = m["local"].format(**subst)
+        with open(os.path.join(ROOT, rel), "rb") as f:
+            data = f.read()
+        url = src["siteUrl"].rstrip("/") + "/" + rel.replace(os.sep, "/")
+    else:
+        url = m["url"].format(**subst)
+        print("Скачиваю", url)
+        data = fetch(url)
+    host = urllib.parse.urlparse(url).hostname
+    if not url.startswith("https://") or host not in WHITELIST:
+        raise SystemExit(f"URL {url} не HTTPS или домен не в белом списке")
+    return url, data
+
+
+def write_versioned(path, sig_path, body, label):
+    """Записать JSON с version/generated; версия растёт, только если содержимое изменилось."""
+    version = 1
+    if os.path.exists(path):
+        try:
+            with open(path, encoding="utf-8") as f:
+                old = json.load(f)
+            old_body = {k: v for k, v in old.items() if k not in ("version", "generated")}
+            if old_body == body:
+                print(label, "не изменился, версия остаётся", old.get("version"))
+                return None
+            version = old.get("version", 0) + 1
+        except Exception as e:
+            print(label, "— старый файл не прочитан:", e)
+    out = {"version": version,
+           "generated": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+           **body}
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(out, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+    if os.path.exists(sig_path):
+        os.remove(sig_path)  # старая подпись больше не действительна
+    return version
+
+
+def build_plugins(src, subst):
+    """plugins.json для PluginSync: серверные плагины (наши и внешние)."""
+    plugins = []
+    for m in src.get("plugins", []):
+        if "local" in m and not os.path.exists(os.path.join(ROOT, m["local"].format(**subst))):
+            print("Пропускаю", m["name"], "— файла нет:", m["local"].format(**subst))
+            continue
+        url, data = load_entry(src, m, subst)
+        sha, size = sha_and_size(data)
+        file = m.get("file", os.path.basename(urllib.parse.urlparse(url).path)).format(**subst)
+        if not re.fullmatch(r"[A-Za-z0-9._+\-]{1,128}\.jar", file):
+            raise SystemExit("Плохое имя файла плагина: " + file)
+        plugins.append({
+            "id": m.get("id", m["name"].lower()), "name": m["name"],
+            "version": m.get("version", "?").format(**subst), "file": file,
+            "url": url, "sha256": sha, "size": size,
+            **({"description": m["description"]} if "description" in m else {}),
+        })
+    body = {"format": 1, "minecraft": src["minecraft"], "plugins": plugins,
+            "remove": src.get("pluginsRemove", [])}
+    v = write_versioned(PLUGINS, PLUGINS_SIG, body, "plugins.json")
+    if v:
+        print("plugins.json v%d: %d плагинов" % (v, len(plugins)))
 
 
 def sha_and_size(data: bytes):
@@ -69,8 +158,9 @@ def mods_hash(shas):
 def build():
     with open(SOURCE, encoding="utf-8") as f:
         src = json.load(f)
-    msv = modsync_version()
-    subst = {"modsync": msv, "pixelui": modsync_version(PIXELUI_PROPS)}
+    subst = subst_all()
+    msv = subst["modsync"]
+    build_plugins(src, subst)
 
     mods = []
     for m in src["mods"]:
@@ -145,29 +235,35 @@ def keygen():
     print("PUBLIC  (в мод, плагин и этот скрипт):", base64.b64encode(pub).decode())
 
 
+def targets():
+    """Файлы, которые нужно подписать/проверить."""
+    return [(p, sp) for p, sp in ((MANIFEST, SIG), (PLUGINS, PLUGINS_SIG)) if os.path.exists(p)]
+
+
 def sign():
     from cryptography.hazmat.primitives import serialization
     raw = os.environ.get("MANIFEST_PRIVATE_KEY", "").strip()
     if not raw:
         raise SystemExit("Переменная MANIFEST_PRIVATE_KEY не задана")
     key = serialization.load_der_private_key(base64.b64decode(raw), password=None)
-    with open(MANIFEST, "rb") as f:
-        data = f.read()
-    sig = key.sign(data)
-    with open(SIG, "w", encoding="ascii", newline="\n") as f:
-        f.write(base64.b64encode(sig).decode() + "\n")
-    print("Подписано:", SIG)
+    for path, sig_path in targets():
+        with open(path, "rb") as f:
+            data = f.read()
+        with open(sig_path, "w", encoding="ascii", newline="\n") as f:
+            f.write(base64.b64encode(key.sign(data)).decode() + "\n")
+        print("Подписано:", os.path.basename(sig_path))
 
 
 def verify():
     from cryptography.hazmat.primitives import serialization
     pub = serialization.load_der_public_key(base64.b64decode(PUBLIC_KEY))
-    with open(MANIFEST, "rb") as f:
-        data = f.read()
-    with open(SIG, encoding="ascii") as f:
-        sig = base64.b64decode(f.read().strip())
-    pub.verify(sig, data)  # бросит исключение, если не сошлось
-    print("Подпись верна ✔")
+    for path, sig_path in targets():
+        with open(path, "rb") as f:
+            data = f.read()
+        with open(sig_path, encoding="ascii") as f:
+            sig = base64.b64decode(f.read().strip())
+        pub.verify(sig, data)  # бросит исключение, если не сошлось
+        print("Подпись верна ✔", os.path.basename(path))
 
 
 if __name__ == "__main__":
