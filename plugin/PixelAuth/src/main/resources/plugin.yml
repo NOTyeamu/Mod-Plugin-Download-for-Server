@@ -22,14 +22,21 @@ commands:
     description: Сменить пароль
     usage: /changepassword <старый> <новый>
     aliases: [changepass, cp]
+  forgotpassword:
+    description: Запросить сброс пароля (его одобряет администрация)
+    usage: /forgotpassword
+    aliases: [resetpassword, forgot]
   pixelauth:
     description: Управление PixelAuth
-    usage: /pixelauth <register|unregister|changepass|forcelogin|info|import-authme|stats|reload>
+    usage: /pixelauth <register|unregister|changepass|forcelogin|info|resets|reset-accept|reset-deny|import-authme|stats|reload>
     aliases: [pauth]
     permission: pixelauth.admin
 permissions:
   pixelauth.admin:
     description: Доступ к /pixelauth
+    default: op
+  pixelauth.resets:
+    description: Уведомления о запросах сброса пароля в чате
     default: op
   pixelauth.unlimited:
     description: Без лимита аккаунтов на один IP

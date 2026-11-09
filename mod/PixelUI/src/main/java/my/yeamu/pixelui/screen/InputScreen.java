@@ -32,6 +32,7 @@ public class InputScreen extends Screen {
     private final Consumer<List<String>> onSubmit;
     private final Runnable onCancel;
     private final Runnable onClosed;
+    private final Consumer<List<String>> onExtra;
     private final long opened = System.currentTimeMillis();
     private final long deadline;
 
@@ -39,6 +40,14 @@ public class InputScreen extends Screen {
     private final List<Integer> labelY = new ArrayList<>();
     private ButtonWidget submitBtn;
     private ButtonWidget cancelBtn;
+    /** Доп. кнопка («Забыли пароль?») и невидимая кнопка-галочка «Показать пароль». */
+    private ButtonWidget extraBtn;
+    private ButtonWidget toggleBtn;
+    private boolean reveal;
+    private boolean hasPassword;
+    /** Сообщение под полями — зелёное (успех), а не красное. */
+    private boolean info;
+    private TextFieldWidget lastField;
     private List<OrderedText> title = List.of();
     private List<OrderedText> lines = List.of();
     private String[] values;
@@ -53,7 +62,14 @@ public class InputScreen extends Screen {
 
     public InputScreen(InputForm form, boolean fromServer, Consumer<List<String>> onSubmit,
                        Runnable onCancel, Runnable onClosed) {
+        this(form, fromServer, onSubmit, onCancel, onClosed, null);
+    }
+
+    /** onExtra — нажатие доп. кнопки (значения полей), может быть null. */
+    public InputScreen(InputForm form, boolean fromServer, Consumer<List<String>> onSubmit,
+                       Runnable onCancel, Runnable onClosed, Consumer<List<String>> onExtra) {
         super(Pixel.text(form.title));
+        this.onExtra = onExtra;
         this.form = form;
         this.fromServer = fromServer;
         this.onSubmit = onSubmit;
@@ -81,8 +97,14 @@ public class InputScreen extends Screen {
 
     /** Сервер сообщил об ошибке (например, неверный пароль). */
     public void setError(String msg, boolean clearPasswords) {
+        setMessage(msg, clearPasswords, false);
+    }
+
+    /** Сообщение под полями: info = true — зелёное, без тряски окна. */
+    public void setMessage(String msg, boolean clearPasswords, boolean isInfo) {
         error = msg == null ? "" : msg;
-        errorAt = System.currentTimeMillis();
+        info = isInfo;
+        errorAt = isInfo ? 0 : System.currentTimeMillis();
         waiting = false;
         if (clearPasswords) {
             TextFieldWidget first = null;
@@ -95,7 +117,8 @@ public class InputScreen extends Screen {
             }
             if (first != null) focus(first);
         }
-        Pixel.sound("minecraft:block.note_block.bass", 0.7f);
+        if (isInfo) Pixel.sound("minecraft:entity.experience_orb.pickup", 1.2f);
+        else Pixel.sound("minecraft:block.note_block.bass", 0.7f);
     }
 
     private void focus(TextFieldWidget w) {
@@ -113,6 +136,8 @@ public class InputScreen extends Screen {
         }
         fields.clear();
         labelY.clear();
+        lastField = null;
+        hasPassword = form.showToggle && form.fields.stream().anyMatch(InputForm.Field::password);
 
         pw = Math.min(form.width, width - 16);
         boolean icon = Pixel.hasIcon(form.icon);
@@ -131,7 +156,8 @@ public class InputScreen extends Screen {
         int body = lines.isEmpty() ? 0 : 6 + lines.size() * 10;
         int fieldsH = 0;
         for (InputForm.Field f : form.fields) fieldsH += (f.label().isEmpty() ? 0 : 11) + BOX_H + 5;
-        ph = header + body + 8 + fieldsH + 12 + 24 + (deadline > 0 ? 6 : 2);
+        ph = header + body + 8 + fieldsH + 12 + 24 + (deadline > 0 ? 6 : 2)
+                + (hasPassword ? 14 : 0) + (form.extra != null ? 18 : 0);
         px = (width - pw) / 2;
         py = Math.max(6, (height - ph) / 2);
 
@@ -151,6 +177,15 @@ public class InputScreen extends Screen {
             fields.add(w);
             y += BOX_H + 5;
         }
+        // Галочка «Показать пароль»: кнопка без отрисовки (рисуем сами), только для кликов
+        if (hasPassword) {
+            toggleBtn = ButtonWidget.builder(Pixel.text(form.toggleLabel), b -> reveal = !reveal)
+                    .dimensions(px + 10, y, 14 + textRenderer.getWidth(Pixel.text(form.toggleLabel)), 10).build();
+            addSelectableChild(toggleBtn);
+            y += 14;
+        } else {
+            toggleBtn = null;
+        }
         errorY = y;
         y += 12;
 
@@ -167,7 +202,15 @@ public class InputScreen extends Screen {
         } else {
             cancelBtn = null;
         }
-        timerY = y + 24;
+        if (form.extra != null) {
+            extraBtn = ButtonWidget.builder(Pixel.text(form.extra), b -> extra())
+                    .dimensions(px + 10, y + 24, pw - 20, 14).build();
+            addDrawableChild(extraBtn);
+            timerY = y + 24 + 18;
+        } else {
+            extraBtn = null;
+            timerY = y + 24;
+        }
         if (!fields.isEmpty()) focus(fields.get(Math.min(focusedIdx, fields.size() - 1)));
     }
 
@@ -183,6 +226,16 @@ public class InputScreen extends Screen {
             silent = true;
             close();
         }
+    }
+
+    /** Доп. кнопка: окно не закрываем, решение за сервером. */
+    private void extra() {
+        long now = System.currentTimeMillis();
+        if (onExtra == null || waiting || now - lastSubmit < 300) return;
+        lastSubmit = now;
+        List<String> out = new ArrayList<>();
+        for (TextFieldWidget f : fields) out.add(f.getText());
+        onExtra.accept(out);
     }
 
     private void cancel() {
@@ -201,6 +254,10 @@ public class InputScreen extends Screen {
                 || GLFW.glfwGetKey(win, GLFW.GLFW_KEY_KP_ENTER) == GLFW.GLFW_PRESS;
         if (down && !enterDown) submit();
         enterDown = down;
+        // После клика по галочке/доп. кнопке возвращаем курсор в поле, чтобы можно было печатать дальше
+        for (TextFieldWidget f : fields) if (f.isFocused()) lastField = f;
+        var foc = getFocused();
+        if (foc != null && lastField != null && (foc == toggleBtn || foc == extraBtn)) focus(lastField);
     }
 
     private float anim() {
@@ -267,12 +324,14 @@ public class InputScreen extends Screen {
             Text et = Pixel.text(error);
             String plain = et.getString();
             int ex = x0 + 10;
-            if (Pixel.hasIcon("cross")) {
-                Pixel.icon(c, "cross", ex, errorY + dy, 1, 0xFFFF5555, a);
+            String ic = info ? "check" : "cross";
+            int col = info ? 0xFF55FF55 : 0xFFFF5555;
+            if (Pixel.hasIcon(ic)) {
+                Pixel.icon(c, ic, ex, errorY + dy, 1, col, a);
                 ex += 11;
             }
             String cut = textRenderer.trimToWidth(plain, pw - 20 - (ex - x0 - 10));
-            c.drawText(textRenderer, cut.equals(plain) ? et : Text.literal(cut), ex, errorY + dy, Pixel.alpha(0xFFFF5555, a), th.shadow());
+            c.drawText(textRenderer, cut.equals(plain) ? et : Text.literal(cut), ex, errorY + dy, Pixel.alpha(col, a), th.shadow());
         }
 
         // Кнопки
@@ -284,6 +343,27 @@ public class InputScreen extends Screen {
             Pixel.button(c, textRenderer, cancelBtn.getX() + dx, cancelBtn.getY() + dy, cancelBtn.getWidth(), cancelBtn.getHeight(),
                     Pixel.text(form.cancel), "", th == Theme.STONE ? 0xFF8B8B8B : 0xFF5A5A5A, th.accent(),
                     cancelBtn.isSelected(), true, a);
+        }
+
+        if (extraBtn != null) {
+            Pixel.button(c, textRenderer, extraBtn.getX() + dx, extraBtn.getY() + dy, extraBtn.getWidth(), extraBtn.getHeight(),
+                    Pixel.text(form.extra), form.extraIcon, th == Theme.STONE ? 0xFF6F6F6F : 0xFF3A3A3A, th.accent(),
+                    extraBtn.isSelected(), true, a);
+        }
+
+        // Галочка «Показать пароль» — пиксельный квадратик с галкой
+        if (toggleBtn != null) {
+            int bx = toggleBtn.getX() + dx, by = toggleBtn.getY() + dy;
+            boolean hov = mouseX >= bx && mouseX < bx + toggleBtn.getWidth() && mouseY >= by && mouseY < by + 10;
+            c.fill(bx, by, bx + 10, by + 10, Pixel.alpha(hov || reveal ? th.accent() : 0xFF000000, a));
+            c.fill(bx + 1, by + 1, bx + 9, by + 9, Pixel.alpha(0xFF0E0E0E, a));
+            if (reveal) {
+                int ck = Pixel.alpha(th.accent(), a);
+                int[][] pts = {{2, 4}, {3, 5}, {4, 6}, {5, 5}, {6, 4}, {7, 3}};
+                for (int[] q : pts) c.fill(bx + q[0], by + q[1], bx + q[0] + 1, by + q[1] + 2, ck);
+            }
+            c.drawText(textRenderer, Pixel.text(form.toggleLabel), bx + 14, by + 1,
+                    Pixel.alpha(hov ? th.title() : th.text(), a), th.shadow());
         }
 
         // Полоска таймера внизу панели
@@ -315,7 +395,7 @@ public class InputScreen extends Screen {
                 c.drawText(textRenderer, textRenderer.trimToWidth(f.placeholder(), room), tx, ty, Pixel.alpha(0xFF6A6A6A, a), false);
             }
         } else {
-            String shown = f.password() ? "*".repeat(raw.length()) : raw;
+            String shown = f.password() && !reveal ? "*".repeat(raw.length()) : raw;
             // Длинный текст — показываем хвост (там, где печатаем)
             while (shown.length() > 1 && textRenderer.getWidth(shown) > room) shown = shown.substring(1);
             c.drawText(textRenderer, shown, tx, ty, Pixel.alpha(0xFFFFFFFF, a), true);

@@ -58,7 +58,7 @@ limbo:
   hide-player: true
   # Держать на спавне мира до входа (потом вернём на место)
   teleport-to-spawn: false
-  allowed-commands: [login, l, log, register, reg]
+  allowed-commands: [login, l, log, register, reg, forgotpassword, resetpassword, forgot]
 
 bedrock:
   # Игроки Geyser/Floodgate входят автоматически (их уже проверил Xbox Live)
@@ -68,6 +68,19 @@ bedrock:
 hash:
   # Итерации PBKDF2-SHA256: больше — надёжнее, но медленнее (считается вне главного потока)
   iterations: 120000
+
+# Сброс пароля: игрок жмёт «Забыли пароль?» (или /forgotpassword), админ одобряет
+# (/pixelauth reset-accept <ник> или кнопка в чате), и игрок задаёт новый пароль при входе.
+reset:
+  enabled: true
+  # Повторный запрос с того же ника или IP — не чаще, чем раз в N минут
+  cooldown-minutes: 10
+  # Одобренный сброс действует N часов
+  valid-hours: 24
+  # /pixelauth resets показывает запросы не старше N дней
+  pending-days: 7
+  # Задать новый пароль можно только с того же IP, с которого был запрос (защита от угона)
+  require-same-ip: true
 
 security:
   # Не писать в консоль «Игрок issued server command: /login пароль»
@@ -150,3 +163,24 @@ messages:
   ui-change-button: 'Сменить'
   ui-quit-button: 'Выйти'
   ui-cancel-button: 'Отмена'
+  ui-show-password: 'Показать пароль'
+  ui-forgot-button: 'Забыли пароль?'
+  ui-reset-title: '&a&lНовый пароль'
+  ui-reset-lines:
+    - 'Сброс пароля для &e{name}&r одобрен.'
+    - '&7Придумайте новый пароль (от {min} символов).'
+  ui-reset-button: 'Сохранить и войти'
+  # --- сброс пароля
+  reset-chat: '&8Забыли пароль? &7/forgotpassword &8(клик)'
+  reset-requested: '&aЗапрос отправлен администрации. Зайдите позже.'
+  reset-cooldown: '&eЗапрос уже отправлен — ждите ответа.'
+  reset-disabled: '&cСброс отключён. Напишите администрации.'
+  reset-denied: '&cАдминистрация отклонила сброс пароля.'
+  reset-approved-chat: '&aСброс пароля одобрен! Задайте новый: &e/register <пароль> <пароль>'
+  reset-success-title: '&aНовый пароль сохранён!'
+  reset-success: '&7Добро пожаловать обратно, &e{name}&7.'
+  reset-admin: '&e{name}&7 просит сбросить пароль {ipnote}'
+  reset-admin-same-ip: '&a(IP как при последнем входе)'
+  reset-admin-other-ip: '&c(IP другой: был {old}, сейчас {ip})'
+  reset-admin-accept: '&a&l[Одобрить]'
+  reset-admin-deny: '&c&l[Отклонить]'

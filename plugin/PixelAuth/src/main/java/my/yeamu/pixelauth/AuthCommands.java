@@ -43,6 +43,7 @@ final class AuthCommands implements TabExecutor {
                 auth.attemptRegister(p, args[0], args[1]);
             }
             case "logout" -> auth.logout(p);
+            case "forgotpassword" -> auth.requestReset(p);
             case "changepassword" -> {
                 if (args.length < 2) {
                     // без аргументов — открываем пиксельное окно, если можно

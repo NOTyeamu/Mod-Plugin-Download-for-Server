@@ -33,6 +33,12 @@ public final class InputForm {
     /** Секунд до конца (только для отображения таймера), 0 — без таймера. */
     public int timer;
     public String error = "";
+    /** Дополнительная кнопка под основными (например «Забыли пароль?»), null — нет. Окно не закрывает. */
+    public String extra = null;
+    public String extraIcon = "";
+    /** Галочка «Показать пароль» под полями с паролем. */
+    public boolean showToggle = true;
+    public String toggleLabel = "Показать пароль";
 
     private static String str(JsonObject o, String k, String def) {
         return o.has(k) && !o.get(k).isJsonNull() ? o.get(k).getAsString() : def;
@@ -74,6 +80,11 @@ public final class InputForm {
         f.closeOnSubmit = bool(o, "closeOnSubmit", true);
         f.timer = Math.max(0, num(o, "timer", 0));
         f.error = str(o, "error", "");
+        f.extra = o.has("extra") && !o.get("extra").isJsonNull() ? o.get("extra").getAsString() : null;
+        if (f.extra != null && f.extra.isEmpty()) f.extra = null;
+        f.extraIcon = str(o, "extraIcon", "");
+        f.showToggle = bool(o, "showToggle", true);
+        f.toggleLabel = str(o, "toggleLabel", "Показать пароль");
         return f;
     }
 }

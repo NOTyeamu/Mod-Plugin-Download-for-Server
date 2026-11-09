@@ -494,6 +494,20 @@ public final class PixelService {
         });
     }
 
+    /** Зелёное сообщение в открытом окне ввода (поля не очищаются). */
+    public void inputInfo(Player p, String id, String text) {
+        sync(() -> {
+            if (!hasInput(p, id)) return;
+            JsonObject o = new JsonObject();
+            o.addProperty("type", "input_error");
+            o.addProperty("id", inputs.get(p.getUniqueId()).id());
+            o.addProperty("error", text == null ? "" : text);
+            o.addProperty("clear", false);
+            o.addProperty("info", true);
+            send(p, o);
+        });
+    }
+
     /** Закрыть окно ввода (обработчики не вызываются). id = null — любое. */
     public void closeInput(Player p, String id) {
         sync(() -> {
@@ -505,6 +519,21 @@ public final class PixelService {
             o.addProperty("id", in.id());
             send(p, o);
         });
+    }
+
+    /** Значения полей из пакета, обрезанные по maxLength (клиенту не доверяем). */
+    private static List<String> readValues(PixelInput in, JsonObject o) {
+        List<String> values = new ArrayList<>();
+        if (o.has("values") && o.get("values").isJsonArray()) {
+            for (var e : o.getAsJsonArray("values")) {
+                if (values.size() >= in.fields().size()) break;
+                String v = e.isJsonNull() ? "" : e.getAsString();
+                int max = in.fields().get(values.size()).maxLength();
+                values.add(v.length() > max ? v.substring(0, max) : v);
+            }
+        }
+        while (values.size() < in.fields().size()) values.add("");
+        return List.copyOf(values);
     }
 
     private void inputPacket(Player p, String type, JsonObject o) {
@@ -526,6 +555,10 @@ public final class PixelService {
                     if (in.closeOnSubmit()) inputs.remove(p.getUniqueId(), in);
                     if (in.onSubmit() != null) in.onSubmit().accept(p, List.copyOf(values));
                 }
+                case "input_extra" -> {
+                    // окно остаётся открытым — плагин сам решит, что делать
+                    if (in.extra() != null && in.onExtra() != null) in.onExtra().accept(p, readValues(in, o));
+                }
                 case "input_cancel" -> {
                     inputs.remove(p.getUniqueId(), in);
                     if (in.onCancel() != null) in.onCancel().accept(p);
@@ -540,7 +573,7 @@ public final class PixelService {
         }
     }
 
-    // ---------------------------------------------------------------- пакеты от клиента
+    // ---------------------------------------------------------------- пакеты от кл��ента
 
     /** Вызывается в главном потоке. */
     public void handle(Player p, JsonObject o) {
@@ -566,7 +599,7 @@ public final class PixelService {
                     menus.remove(p.getUniqueId(), m);
                     fireClose(p, m.menu(), PixelMenuCloseEvent.Reason.PLAYER);
                 }
-                case "input_submit", "input_cancel", "input_closed" -> inputPacket(p, type, o);
+                case "input_submit", "input_extra", "input_cancel", "input_closed" -> inputPacket(p, type, o);
                 case "answer" -> {
                     Map<String, PromptState> map = prompts.get(p.getUniqueId());
                     if (map == null) return;

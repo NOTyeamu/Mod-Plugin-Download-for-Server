@@ -1,5 +1,7 @@
 package my.yeamu.pixelauth;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -21,7 +23,7 @@ import java.util.logging.Level;
 final class AdminCommand implements TabExecutor {
 
     private static final List<String> SUB = List.of("register", "unregister", "changepass", "forcelogin", "info",
-            "import-authme", "stats", "reload");
+            "import-authme", "stats", "reload", "resets", "reset-accept", "reset-deny");
     private final PixelAuthPlugin plugin;
 
     AdminCommand(PixelAuthPlugin plugin) {
@@ -133,6 +135,67 @@ final class AdminCommand implements TabExecutor {
                     fail(s, e);
                 }
             });
+            case "resets" -> {
+                long since = System.currentTimeMillis() - plugin.settings().resetPendingDays * 86_400_000L;
+                plugin.storage().executor().execute(() -> {
+                    try {
+                        List<ResetRequest> list = plugin.storage().pendingResets(since, 20);
+                        List<Component> lines = new ArrayList<>();
+                        SimpleDateFormat f = new SimpleDateFormat("dd.MM HH:mm");
+                        for (ResetRequest r : list) {
+                            Account acc = plugin.storage().find(r.name());
+                            String last = acc == null ? null : acc.lastIp();
+                            boolean same = r.ip() != null && r.ip().equals(last);
+                            lines.add(Msg.color("&e" + r.realName() + " &8" + f.format(new Date(r.created()))
+                                            + " &7IP " + nz(r.ip()) + (same ? " &a(как при последнем входе)" : " &c(последний вход: " + nz(last) + ")") + " ")
+                                    .append(Msg.color("&a&l[Одобрить]").clickEvent(ClickEvent.runCommand("/pixelauth reset-accept " + r.realName())))
+                                    .append(Component.space())
+                                    .append(Msg.color("&c&l[Отклонить]").clickEvent(ClickEvent.runCommand("/pixelauth reset-deny " + r.realName()))));
+                        }
+                        sync(() -> {
+                            if (lines.isEmpty()) {
+                                s.sendMessage("§7Запросов сброса пароля нет.");
+                                return;
+                            }
+                            s.sendMessage("§6── Запросы сброса пароля (" + lines.size() + ") ──");
+                            for (Component c : lines) s.sendMessage(c);
+                        });
+                    } catch (SQLException e) {
+                        fail(s, e);
+                    }
+                });
+            }
+            case "reset-accept", "reset-deny" -> {
+                boolean accept = a[0].equalsIgnoreCase("reset-accept");
+                if (a.length < 2) { s.sendMessage("§c/pixelauth " + (accept ? "reset-accept" : "reset-deny") + " <ник>"); return true; }
+                String name = a[1];
+                String by = s.getName();
+                plugin.storage().executor().execute(() -> {
+                    try {
+                        ResetRequest r = plugin.storage().findReset(name);
+                        if (r == null || !r.pending()) {
+                            reply(s, r != null && r.approved() ? "§eСброс для " + r.realName() + " уже одобрен."
+                                    : "§cНет активного запроса сброса от " + name + ".");
+                            return;
+                        }
+                        long now = System.currentTimeMillis();
+                        String status = accept ? ResetRequest.APPROVED : ResetRequest.DENIED;
+                        plugin.storage().decideReset(name, status, now);
+                        ResetRequest d = r.decide(status, now);
+                        sync(() -> {
+                            plugin.loginLog().write(r.realName(), r.ip(), accept ? "RESET-ACCEPT" : "RESET-DENY", "by " + by);
+                            plugin.auth().resetDecided(r.name(), d);
+                            s.sendMessage(accept
+                                    ? "§aСброс пароля " + r.realName() + " одобрен. При входе"
+                                      + (plugin.settings().resetRequireSameIp ? " с IP " + r.ip() : "")
+                                      + " игрок задаст новый пароль (в течение " + plugin.settings().resetValidHours + " ч)."
+                                    : "§eЗапрос " + r.realName() + " отклонён.");
+                        });
+                    } catch (SQLException e) {
+                        fail(s, e);
+                    }
+                });
+            }
             case "reload" -> {
                 plugin.reloadSettings();
                 s.sendMessage("§aКонфиг PixelAuth перезагружен (тип базы меняется только после рестарта).");
@@ -150,6 +213,8 @@ final class AdminCommand implements TabExecutor {
                 + "\n§e/pixelauth forcelogin <игрок>"
                 + "\n§e/pixelauth info <ник>"
                 + "\n§e/pixelauth import-authme [файл] [таблица]"
+                + "\n§e/pixelauth resets §7— запросы сброса пароля"
+                + "\n§e/pixelauth reset-accept <ник> §7/ §ereset-deny <ник>"
                 + "\n§e/pixelauth stats"
                 + "\n§e/pixelauth reload");
     }

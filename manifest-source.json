@@ -47,6 +47,9 @@
     },
     {
       "file": "PixelUI-1.1.3.jar"
+    },
+    {
+      "file": "PixelUI-1.1.4.jar"
     }
   ],
   "optional": [],
@@ -92,6 +95,12 @@
     },
     {
       "file": "PixelUI-Paper-1.1.2.jar"
+    },
+    {
+      "file": "PixelUI-Paper-1.1.3.jar"
+    },
+    {
+      "file": "PixelAuth-1.0.0.jar"
     }
   ]
 }

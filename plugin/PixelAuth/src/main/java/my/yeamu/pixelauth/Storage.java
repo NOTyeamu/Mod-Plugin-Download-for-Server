@@ -21,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 public final class Storage {
 
     private static final String T = "pixelauth_accounts";
+    /** Запросы сброса пароля (один на ник). */
+    private static final String RT = "pixelauth_resets";
 
     private final File dataFolder;
     private final Settings s;
@@ -56,6 +58,13 @@ public final class Storage {
                     + "last_ip VARCHAR(64),"
                     + "last_login BIGINT NOT NULL DEFAULT 0)");
             if (!mysql) st.executeUpdate("CREATE INDEX IF NOT EXISTS " + T + "_ip ON " + T + " (reg_ip)");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS " + RT + " ("
+                    + "name VARCHAR(32) NOT NULL PRIMARY KEY,"
+                    + "realname VARCHAR(32) NOT NULL,"
+                    + "ip VARCHAR(64),"
+                    + "created BIGINT NOT NULL DEFAULT 0,"
+                    + "status VARCHAR(16) NOT NULL,"
+                    + "decided BIGINT NOT NULL DEFAULT 0)");
         }
     }
 
@@ -91,7 +100,7 @@ public final class Storage {
         }
     }
 
-    /** @return false, если такой ник уже занят */
+    /** @return false, если такой ник уже ��анят */
     public synchronized boolean insert(Account a) throws SQLException {
         String sql = (mysql ? "INSERT IGNORE INTO " : "INSERT OR IGNORE INTO ") + T
                 + " (name, realname, uuid, hash, reg_ip, reg_date, last_ip, last_login) VALUES (?,?,?,?,?,?,?,?)";
@@ -144,10 +153,76 @@ public final class Storage {
     }
 
     public synchronized boolean delete(String name) throws SQLException {
+        deleteReset(name);
         try (PreparedStatement ps = connection().prepareStatement("DELETE FROM " + T + " WHERE name = ?")) {
             ps.setString(1, name.toLowerCase(Locale.ROOT));
             return ps.executeUpdate() > 0;
         }
+    }
+
+    // ---------------------------------------------------------------- запросы сброса пароля
+
+    public synchronized ResetRequest findReset(String name) throws SQLException {
+        try (PreparedStatement ps = connection().prepareStatement("SELECT * FROM " + RT + " WHERE name = ?")) {
+            ps.setString(1, name.toLowerCase(Locale.ROOT));
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? readReset(rs) : null;
+            }
+        }
+    }
+
+    /** Сохранить запрос (старый по этому нику заменяется). */
+    public synchronized void saveReset(ResetRequest r) throws SQLException {
+        Connection c = connection();
+        try (PreparedStatement del = c.prepareStatement("DELETE FROM " + RT + " WHERE name = ?");
+             PreparedStatement ins = c.prepareStatement("INSERT INTO " + RT
+                     + " (name, realname, ip, created, status, decided) VALUES (?, ?, ?, ?, ?, ?)")) {
+            del.setString(1, r.name().toLowerCase(Locale.ROOT));
+            del.executeUpdate();
+            ins.setString(1, r.name().toLowerCase(Locale.ROOT));
+            ins.setString(2, r.realName());
+            ins.setString(3, r.ip());
+            ins.setLong(4, r.created());
+            ins.setString(5, r.status());
+            ins.setLong(6, r.decided());
+            ins.executeUpdate();
+        }
+    }
+
+    public synchronized boolean decideReset(String name, String status, long time) throws SQLException {
+        try (PreparedStatement ps = connection().prepareStatement("UPDATE " + RT + " SET status = ?, decided = ? WHERE name = ?")) {
+            ps.setString(1, status);
+            ps.setLong(2, time);
+            ps.setString(3, name.toLowerCase(Locale.ROOT));
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    public synchronized void deleteReset(String name) throws SQLException {
+        try (PreparedStatement ps = connection().prepareStatement("DELETE FROM " + RT + " WHERE name = ?")) {
+            ps.setString(1, name.toLowerCase(Locale.ROOT));
+            ps.executeUpdate();
+        }
+    }
+
+    /** Запросы, которые ждут решения, не старше since (мс), старые впереди. */
+    public synchronized List<ResetRequest> pendingResets(long since, int limit) throws SQLException {
+        List<ResetRequest> out = new java.util.ArrayList<>();
+        try (PreparedStatement ps = connection().prepareStatement("SELECT * FROM " + RT
+                + " WHERE status = ? AND created >= ? ORDER BY created LIMIT ?")) {
+            ps.setString(1, ResetRequest.PENDING);
+            ps.setLong(2, since);
+            ps.setInt(3, limit);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) out.add(readReset(rs));
+            }
+        }
+        return out;
+    }
+
+    private static ResetRequest readReset(ResultSet rs) throws SQLException {
+        return new ResetRequest(rs.getString("name"), rs.getString("realname"), rs.getString("ip"),
+                rs.getLong("created"), rs.getString("status"), rs.getLong("decided"));
     }
 
     public synchronized int countByIp(String ip) throws SQLException {

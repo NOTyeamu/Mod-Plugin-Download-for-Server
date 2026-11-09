@@ -38,6 +38,8 @@ public final class AuthManager {
         final String name;
         final String ip;
         volatile Account account;   // null — не зарегистрирован
+        volatile ResetRequest reset; // запрос сброса пароля или null
+        boolean resetDone;          // только что задал новый пароль после сброса
         volatile boolean loaded;    // аккаунт загружен из базы
         volatile boolean authed;
         boolean busy;               // идёт проверка пароля — второй запрос игнорируем
@@ -61,6 +63,10 @@ public final class AuthManager {
     private final Map<String, Optional<Account>> preloaded = new ConcurrentHashMap<>();
     private final Map<String, Integer> ipKicks = new ConcurrentHashMap<>();
     private final Map<String, Long> ipBlocked = new ConcurrentHashMap<>();
+    /** Запросы сброса, загруженные в pre-login (ключ — ник в нижнем регистре). */
+    private final Map<String, Optional<ResetRequest>> preResets = new ConcurrentHashMap<>();
+    /** Антиспам запросов сброса: "ip:..." / "name:..." → время последнего запроса. */
+    private final Map<String, Long> resetCooldown = new ConcurrentHashMap<>();
     private final ExecutorService hasher = Executors.newFixedThreadPool(2, r -> {
         Thread t = new Thread(r, "PixelAuth-Hash");
         t.setDaemon(true);
@@ -110,6 +116,7 @@ public final class AuthManager {
                 return;
             }
             preloaded.put(name.toLowerCase(Locale.ROOT), Optional.ofNullable(a));
+            preResets.put(name.toLowerCase(Locale.ROOT), Optional.ofNullable(a == null ? null : plugin.storage().findReset(name)));
         } catch (SQLException ex) {
             plugin.getLogger().log(Level.WARNING, "Ошибка базы при входе " + name, ex);
             deny(e, msg().comp("storage-error"));
@@ -141,8 +148,10 @@ public final class AuthManager {
         }
 
         Optional<Account> pre = preloaded.remove(p.getName().toLowerCase(Locale.ROOT));
+        Optional<ResetRequest> preReset = preResets.remove(p.getName().toLowerCase(Locale.ROOT));
         if (pre != null) {
             st.account = pre.orElse(null);
+            st.reset = preReset == null ? null : preReset.orElse(null);
             st.loaded = true;
             afterLoad(p, st);
             return;
@@ -151,8 +160,10 @@ public final class AuthManager {
         startLimbo(p, st);
         db(() -> {
             Account a;
+            ResetRequest rr;
             try {
                 a = plugin.storage().find(st.name);
+                rr = a == null ? null : plugin.storage().findReset(st.name);
             } catch (SQLException ex) {
                 plugin.getLogger().log(Level.WARNING, "Ошибка базы для " + st.name, ex);
                 sync(() -> { if (p.isOnline()) p.kick(msg().comp("storage-error")); });
@@ -161,6 +172,7 @@ public final class AuthManager {
             sync(() -> {
                 if (!p.isOnline() || states.get(st.uuid) != st || st.authed) return;
                 st.account = a;
+                st.reset = rr;
                 st.loaded = true;
                 afterLoad(p, st);
             });
@@ -174,7 +186,7 @@ public final class AuthManager {
         }
         startLimbo(p, st);
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (p.isOnline() && !st.authed && states.get(st.uuid) == st) screens().show(p, st, null);
+            if (p.isOnline() && !st.authed && states.get(st.uuid) == st) screens().show(p, st, deniedNote(st));
         }, Math.max(1, s().uiDelayTicks));
     }
 
@@ -222,7 +234,7 @@ public final class AuthManager {
             st.bar.progress(progress);
             st.bar.color(left <= 10 ? BossBar.Color.RED : BossBar.Color.YELLOW);
         }
-        if (st.loaded && st.seconds % s().reminderSeconds == 0) screens().chatPrompt(p, st.account != null, false);
+        if (st.loaded && st.seconds % s().reminderSeconds == 0) screens().chatPrompt(p, st.account != null && !resetReady(st), false);
     }
 
     int secondsLeft(State st) {
@@ -316,7 +328,9 @@ public final class AuthManager {
         }
         if (!st.loaded || st.busy) return;
         if (st.account != null) {
-            screens().error(p, AUTH_ID, msg().raw("already-registered"));
+            // сброс одобрен — «регистрация» задаёт новый пароль существующему аккаунту
+            if (resetReady(st)) attemptReset(p, st, password, repeat);
+            else screens().error(p, AUTH_ID, msg().raw("already-registered"));
             return;
         }
         String err = validate(p.getName(), password, repeat);
@@ -479,6 +493,141 @@ public final class AuthManager {
         if (st != null && !st.authed && st.loaded) screens().show(p, st, null);
     }
 
+    // ================================================================ сброс пароля
+
+    /** Есть одобренный сброс, который можно применить прямо сейчас (не истёк, тот же IP). */
+    boolean resetReady(State st) {
+        ResetRequest r = st.reset;
+        if (r == null || !r.approved() || st.account == null || !s().resetEnabled) return false;
+        if (System.currentTimeMillis() - r.decided() > s().resetValidHours * 3_600_000L) return false;
+        return !s().resetRequireSameIp || st.ip.equals(r.ip());
+    }
+
+    /** Кнопка «Забыли пароль?» или /forgotpassword: запрос уходит администрации. */
+    public void requestReset(Player p) {
+        State st = states.get(p.getUniqueId());
+        if (st == null || st.authed) {
+            msg().send(p, "already-logged");
+            return;
+        }
+        if (!st.loaded || st.busy) return;
+        if (!s().resetEnabled) {
+            screens().error(p, AUTH_ID, msg().raw("reset-disabled"));
+            return;
+        }
+        if (st.account == null) {
+            screens().error(p, AUTH_ID, msg().raw("not-registered"));
+            return;
+        }
+        if (resetReady(st)) {
+            screens().show(p, st, null);
+            return;
+        }
+        long now = System.currentTimeMillis();
+        long cd = s().resetCooldownMinutes * 60_000L;
+        resetCooldown.values().removeIf(t -> now - t > cd);
+        Account a = st.account;
+        String ipKey = "ip:" + st.ip, nameKey = "name:" + a.name().toLowerCase(Locale.ROOT);
+        ResetRequest old = st.reset;
+        if (resetCooldown.containsKey(ipKey) || resetCooldown.containsKey(nameKey)
+                || (old != null && old.pending() && now - old.created() < cd)) {
+            screens().info(p, AUTH_ID, msg().raw("reset-cooldown"));
+            return;
+        }
+        resetCooldown.put(ipKey, now);
+        resetCooldown.put(nameKey, now);
+        ResetRequest req = new ResetRequest(a.name().toLowerCase(Locale.ROOT), a.realName(), st.ip, now, ResetRequest.PENDING, 0);
+        st.reset = req;
+        st.busy = true;
+        db(() -> {
+            boolean ok = true;
+            try {
+                plugin.storage().saveReset(req);
+            } catch (SQLException ex) {
+                plugin.getLogger().log(Level.WARNING, "Ошибка базы (запрос сброса) " + a.name(), ex);
+                ok = false;
+            }
+            boolean done = ok;
+            sync(() -> {
+                st.busy = false;
+                if (!done) {
+                    if (p.isOnline()) screens().error(p, AUTH_ID, msg().raw("storage-error"));
+                    return;
+                }
+                plugin.loginLog().write(st.name, st.ip, "RESET-REQUEST", "");
+                screens().notifyAdmins(a.realName(), st.ip, a.lastIp());
+                if (p.isOnline() && !st.authed) screens().info(p, AUTH_ID, msg().raw("reset-requested"));
+            });
+        });
+    }
+
+    /** Новый пароль после одобренного сброса: сохраняем и сразу пускаем. */
+    private void attemptReset(Player p, State st, String password, String repeat) {
+        String err = validate(p.getName(), password, repeat);
+        if (err != null) {
+            screens().error(p, AUTH_ID, err);
+            return;
+        }
+        Account a = st.account;
+        st.busy = true;
+        int iter = s().hashIterations;
+        async(hasher, () -> {
+            String hash = Passwords.hash(password, iter);
+            db(() -> {
+                boolean ok = true;
+                try {
+                    plugin.storage().updateHash(a.name(), hash);
+                    plugin.storage().deleteReset(a.name());
+                } catch (SQLException ex) {
+                    plugin.getLogger().log(Level.WARNING, "Ошибка базы (сброс пароля) " + a.name(), ex);
+                    ok = false;
+                }
+                boolean done = ok;
+                sync(() -> {
+                    st.busy = false;
+                    if (!p.isOnline() || states.get(st.uuid) != st || st.authed) return;
+                    if (!done) {
+                        screens().error(p, AUTH_ID, msg().raw("storage-error"));
+                        return;
+                    }
+                    st.account = st.account == null ? a.withHash(hash) : st.account.withHash(hash);
+                    st.reset = null;
+                    st.resetDone = true;
+                    plugin.loginLog().write(st.name, st.ip, "RESET", "new password");
+                    complete(p, st, PixelAuthLoginEvent.Type.PASSWORD);
+                });
+            });
+        });
+    }
+
+    /** Запрос отклонён: сообщаем один раз и удаляем запрос. null — сообщать нечего. */
+    private String deniedNote(State st) {
+        ResetRequest r = st.reset;
+        if (r == null || !r.denied()) return null;
+        st.reset = null;
+        String name = r.name();
+        db(() -> {
+            try {
+                plugin.storage().deleteReset(name);
+            } catch (SQLException ex) {
+                plugin.getLogger().log(Level.WARNING, "Ошибка базы (удаление запроса) " + name, ex);
+            }
+        });
+        return msg().raw("reset-denied");
+    }
+
+    /** Админ решил судьбу запроса: если игрок сейчас на экране входа — сразу обновляем его. */
+    void resetDecided(String name, ResetRequest r) {
+        for (State st : states.values()) {
+            if (!st.name.equalsIgnoreCase(name) || st.authed) continue;
+            st.reset = r;
+            Player p = Bukkit.getPlayer(st.uuid);
+            if (p == null || !st.loaded) continue;
+            if (resetReady(st)) screens().show(p, st, null);
+            else if (r.denied()) screens().error(p, AUTH_ID, deniedNote(st));
+        }
+    }
+
     // ================================================================ администратор / API
 
     public boolean forceLogin(Player p) {
@@ -488,7 +637,7 @@ public final class AuthManager {
         return true;
     }
 
-    /** Аккаунт удалён админом: если игрок онлайн — кикаем, при следующем входе он зарегистрируется заново. */
+    /** Аккаунт удалён админом: ��сли игрок онлайн — кикаем, при следующем входе он зарегистрируется заново. */
     void accountDeleted(String name) {
         Player p = Bukkit.getPlayerExact(name);
         if (p != null && states.containsKey(p.getUniqueId())) p.kick(msg().comp("kick-unregistered"));
@@ -534,7 +683,10 @@ public final class AuthManager {
         screens().closeAuth(p);
         ipKicks.remove(st.ip);
         switch (type) {
-            case PASSWORD, FORCED -> screens().success(p, "login-success-title", "login-success");
+            case PASSWORD, FORCED -> {
+                if (st.resetDone) screens().success(p, "reset-success-title", "reset-success");
+                else screens().success(p, "login-success-title", "login-success");
+            }
             case REGISTER -> screens().success(p, "register-success-title", "register-success");
             case SESSION -> msg().send(p, "session-login", "name", p.getName());
             case BEDROCK -> msg().send(p, "bedrock-login", "name", p.getName());
@@ -552,6 +704,19 @@ public final class AuthManager {
             });
         }
         plugin.loginLog().write(st.name, st.ip, type.name(), "");
+        if (st.reset != null && type == PixelAuthLoginEvent.Type.PASSWORD) {
+            // игрок вспомнил пароль — запрос сброса больше не нужен
+            String rn = st.reset.name();
+            st.reset = null;
+            db(() -> {
+                try {
+                    plugin.storage().deleteReset(rn);
+                } catch (SQLException ex) {
+                    plugin.getLogger().log(Level.WARNING, "Ошибка базы (удаление запроса) " + rn, ex);
+                }
+            });
+        }
+        st.resetDone = false;
         Bukkit.getPluginManager().callEvent(new PixelAuthLoginEvent(p, type));
     }
 

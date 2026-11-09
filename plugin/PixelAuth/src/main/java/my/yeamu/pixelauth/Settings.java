@@ -36,6 +36,9 @@ public final class Settings {
     public final int hashIterations;
     public final boolean hideCommands, passiveIfAuthMe, logEnabled;
 
+    public final boolean resetEnabled, resetRequireSameIp;
+    public final int resetCooldownMinutes, resetValidHours, resetPendingDays;
+
     public Settings(FileConfiguration c) {
         storageType = c.getString("storage.type", "sqlite").toLowerCase(Locale.ROOT);
         mysqlHost = c.getString("storage.mysql.host", "localhost");
@@ -78,12 +81,19 @@ public final class Settings {
         List<String> list = c.getStringList("limbo.allowed-commands");
         if (list.isEmpty()) list = List.of("login", "l", "log", "register", "reg");
         for (String s : list) cmds.add(s.toLowerCase(Locale.ROOT).replace("/", ""));
+        // запрос сброса пароля должен работать и со старым config.yml
+        cmds.addAll(List.of("forgotpassword", "resetpassword", "forgot"));
         allowedCommands = Set.copyOf(cmds);
 
         bedrockAutoLogin = c.getBoolean("bedrock.auto-login", true);
         bedrockPrefix = c.getString("bedrock.prefix", ".");
 
         hashIterations = clamp(c.getInt("hash.iterations", 120000), 10000, 2_000_000);
+        resetEnabled = c.getBoolean("reset.enabled", true);
+        resetCooldownMinutes = clamp(c.getInt("reset.cooldown-minutes", 10), 0, 60 * 24);
+        resetValidHours = clamp(c.getInt("reset.valid-hours", 24), 1, 24 * 30);
+        resetPendingDays = clamp(c.getInt("reset.pending-days", 7), 1, 365);
+        resetRequireSameIp = c.getBoolean("reset.require-same-ip", true);
         hideCommands = c.getBoolean("security.hide-commands-in-console", true);
         passiveIfAuthMe = c.getBoolean("compat.passive-if-authme", true);
         logEnabled = c.getBoolean("log.enabled", true);

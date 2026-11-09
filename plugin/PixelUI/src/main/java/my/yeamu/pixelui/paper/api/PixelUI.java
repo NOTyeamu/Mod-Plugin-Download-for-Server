@@ -103,6 +103,11 @@ public final class PixelUI {
         PixelUIPlugin.get().service().inputError(player, id, error, clearPasswords);
     }
 
+    /** Зелёное сообщение в открытом окне ввода (например «Запрос отправлен»). Поля не очищаются. */
+    public static void inputInfo(Player player, String id, String text) {
+        PixelUIPlugin.get().service().inputInfo(player, id, text);
+    }
+
     /** Закрыть окно ввода. id = null — любое открытое. */
     public static void closeInput(Player player, String id) {
         PixelUIPlugin.get().service().closeInput(player, id);

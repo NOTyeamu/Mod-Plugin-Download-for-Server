@@ -54,13 +54,13 @@ public final class PixelInput {
         }
     }
 
-    private final String id, title, icon, submit, submitIcon, cancel, error;
+    private final String id, title, icon, submit, submitIcon, cancel, error, extra, extraIcon, toggleLabel;
     private final PixelTheme theme;
     private final int width, timerSeconds;
-    private final boolean closeable, closeOnSubmit;
+    private final boolean closeable, closeOnSubmit, showPasswordToggle;
     private final List<String> lines;
     private final List<Field> fields;
-    private final BiConsumer<Player, List<String>> onSubmit;
+    private final BiConsumer<Player, List<String>> onSubmit, onExtra;
     private final Consumer<Player> onCancel, onClose;
 
     private PixelInput(Builder b) {
@@ -81,6 +81,11 @@ public final class PixelInput {
         onSubmit = b.onSubmit;
         onCancel = b.onCancel;
         onClose = b.onClose;
+        extra = b.extra;
+        extraIcon = b.extraIcon;
+        toggleLabel = b.toggleLabel;
+        showPasswordToggle = b.showPasswordToggle;
+        onExtra = b.onExtra;
     }
 
     public static Builder builder(String id) {
@@ -97,6 +102,8 @@ public final class PixelInput {
     public BiConsumer<Player, List<String>> onSubmit() { return onSubmit; }
     public Consumer<Player> onCancel() { return onCancel; }
     public Consumer<Player> onClose() { return onClose; }
+    public BiConsumer<Player, List<String>> onExtra() { return onExtra; }
+    public String extra() { return extra; }
 
     /** Копия с другим текстом ошибки и таймером (удобно для повторного открытия). */
     public PixelInput with(String newError, int newTimerSeconds) {
@@ -113,6 +120,8 @@ public final class PixelInput {
         b.closeable = closeable; b.closeOnSubmit = closeOnSubmit;
         b.lines.addAll(lines); b.fields.addAll(fields);
         b.onSubmit = onSubmit; b.onCancel = onCancel; b.onClose = onClose;
+        b.extra = extra; b.extraIcon = extraIcon; b.toggleLabel = toggleLabel;
+        b.showPasswordToggle = showPasswordToggle; b.onExtra = onExtra;
         return b;
     }
 
@@ -145,6 +154,10 @@ public final class PixelInput {
         o.addProperty("closeOnSubmit", closeOnSubmit);
         o.addProperty("timer", timerSeconds);
         o.addProperty("error", error);
+        if (extra != null) o.addProperty("extra", extra);
+        o.addProperty("extraIcon", extraIcon);
+        o.addProperty("showToggle", showPasswordToggle);
+        o.addProperty("toggleLabel", toggleLabel);
         return o;
     }
 
@@ -163,6 +176,9 @@ public final class PixelInput {
         private final List<Field> fields = new ArrayList<>();
         private BiConsumer<Player, List<String>> onSubmit;
         private Consumer<Player> onCancel, onClose;
+        private String extra, extraIcon = "", toggleLabel = "Показать пароль";
+        private boolean showPasswordToggle = true;
+        private BiConsumer<Player, List<String>> onExtra;
 
         private Builder(String id) {
             this.id = Objects.requireNonNull(id, "id");
@@ -192,6 +208,18 @@ public final class PixelInput {
         public Builder onCancel(Consumer<Player> h) { onCancel = h; return this; }
         /** Окно закрылось не кнопкой (Esc, другой экран и т.п.). */
         public Builder onClose(Consumer<Player> h) { onClose = h; return this; }
+
+        /**
+         * Доп. кнопка под основными (например «Забыли пароль?»). null — без неё.
+         * Окно не закрывает; обработчик — {@link #onExtra}. Нужен мод PixelUI 1.1.5+ (у старых кнопки просто нет).
+         */
+        public Builder extra(String label) { extra = label == null || label.isEmpty() ? null : label; return this; }
+        public Builder extraIcon(String i) { extraIcon = i == null ? "" : i; return this; }
+        /** Нажата доп. кнопка: игрок и текущие значения полей. */
+        public Builder onExtra(BiConsumer<Player, List<String>> h) { onExtra = h; return this; }
+        /** Галочка «Показать пароль» под полями с паролем (по умолчанию есть). */
+        public Builder showPasswordToggle(boolean b) { showPasswordToggle = b; return this; }
+        public Builder toggleLabel(String s) { toggleLabel = s == null || s.isEmpty() ? "Показать пароль" : s; return this; }
 
         public PixelInput build() { return new PixelInput(this); }
 

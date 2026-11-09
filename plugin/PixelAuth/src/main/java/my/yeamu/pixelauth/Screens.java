@@ -52,15 +52,22 @@ final class Screens {
     /** Показать экран входа/регистрации. error — текст ошибки или null. */
     void show(Player p, AuthManager.State st, String error) {
         boolean registered = st.account != null;
+        boolean reset = registered && plugin.auth().resetReady(st);
         if (pixel(p)) {
             try {
-                PixelScreens.auth(plugin, p, registered, error, plugin.auth().secondsLeft(st));
+                PixelScreens.auth(plugin, p, reset ? "reset" : registered ? "login" : "register", error,
+                        plugin.auth().secondsLeft(st));
                 return;
             } catch (Throwable t) {
                 plugin.getLogger().log(Level.FINE, "PixelUI не смог открыть окно", t);
             }
         }
-        chatPrompt(p, registered, true);
+        if (reset) {
+            p.sendMessage(Msg.color(plugin.msg().raw("prefix") + plugin.msg().raw("reset-approved-chat"))
+                    .clickEvent(ClickEvent.suggestCommand("/register ")));
+        } else {
+            chatPrompt(p, registered, true);
+        }
         if (error != null && !error.isEmpty()) p.sendMessage(Msg.color(plugin.msg().raw("prefix") + error));
     }
 
@@ -80,6 +87,10 @@ final class Screens {
                     m.comp(registered ? "login-subtitle" : "register-subtitle"),
                     Title.Times.times(Duration.ofMillis(300), Duration.ofSeconds(plugin.settings().timeoutSeconds), Duration.ofMillis(300))));
             if (pixelAvailable) p.sendMessage(m.comp("mod-hint"));
+            if (registered && plugin.settings().resetEnabled) {
+                p.sendMessage(Msg.color(m.raw("reset-chat")).clickEvent(ClickEvent.runCommand("/forgotpassword"))
+                        .hoverEvent(HoverEvent.showText(Component.text("/forgotpassword"))));
+            }
         }
     }
 
@@ -96,6 +107,51 @@ final class Screens {
             }
         }
         p.sendMessage(Msg.color(plugin.msg().raw("prefix") + raw));
+    }
+
+    /** Зелёная строка в открытом окне (поля не очищаются) или сообщение в чат. */
+    void info(Player p, String inputId, String raw) {
+        if (pixel(p)) {
+            try {
+                if (PixelScreens.hasInput(p, inputId)) {
+                    PixelScreens.info(p, inputId, raw);
+                    return;
+                }
+            } catch (Throwable ignored) {
+                // упадём в чат
+            }
+        }
+        p.sendMessage(Msg.color(plugin.msg().raw("prefix") + raw));
+    }
+
+    /** Новый запрос сброса: админам онлайн — строка с кнопками [Одобрить] / [Отклонить], в консоль — запись. */
+    void notifyAdmins(String name, String ip, String lastIp) {
+        Msg m = plugin.msg();
+        boolean same = ip.equals(lastIp);
+        String note = same ? m.raw("reset-admin-same-ip")
+                : m.raw("reset-admin-other-ip", "old", lastIp == null ? "-" : lastIp, "ip", ip);
+        String accept = "/pixelauth reset-accept " + name, deny = "/pixelauth reset-deny " + name;
+        Component line = Msg.color(m.raw("prefix") + m.raw("reset-admin", "name", name, "ipnote", note))
+                .append(Component.space())
+                .append(Msg.color(m.raw("reset-admin-accept")).clickEvent(ClickEvent.runCommand(accept))
+                        .hoverEvent(HoverEvent.showText(Component.text(accept))))
+                .append(Component.space())
+                .append(Msg.color(m.raw("reset-admin-deny")).clickEvent(ClickEvent.runCommand(deny))
+                        .hoverEvent(HoverEvent.showText(Component.text(deny))));
+        for (Player a : Bukkit.getOnlinePlayers()) {
+            if (!a.hasPermission("pixelauth.resets") || !plugin.auth().isAuthed(a)) continue;
+            a.sendMessage(line);
+            if (pixel(a)) {
+                try {
+                    PixelScreens.adminNotify(a, name);
+                } catch (Throwable ignored) {
+                    // чата достаточно
+                }
+            }
+        }
+        plugin.getLogger().info("Запрос сброса пароля: " + name + " (IP " + ip
+                + (same ? ", совпадает с последним входом" : ", последний вход был с " + (lastIp == null ? "-" : lastIp))
+                + "). Одобрить: " + accept + ", отклонить: " + deny);
     }
 
     void closeAuth(Player p) {

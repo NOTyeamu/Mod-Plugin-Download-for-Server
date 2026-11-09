@@ -145,6 +145,21 @@ if (!PixelUI.input(player, form)) { /* у игрока нет мода — сп�
 
 `Field.password(...)` прячет символы; `closeable(false)` — окно не закрывается по Esc; `timer(60)` — обратный отсчёт.
 
+### Доп. кнопка и «Показать пароль»
+
+```java
+PixelInput.builder("myplugin-login")
+        .field(PixelInput.Field.password("Пароль"))
+        .extra("Забыли пароль?")              // кнопка под основными, окно НЕ закрывает
+        .extraIcon(PixelIcon.QUESTION)
+        .onExtra((player, values) -> { /* ... */ PixelUI.inputInfo(player, "myplugin-login", "&aЗапрос отправлен"); })
+        .showPasswordToggle(true)              // галочка «Показать пароль» (по умолчанию есть)
+        .toggleLabel("Показать пароль")
+        .build();
+```
+
+`PixelUI.inputInfo(player, id, text)` — зелёная строка в окне (поля не очищаются), в отличие от красной `inputError`. Нужен мод PixelUI 1.1.5+; на старых модах доп. кнопки и галочки просто нет. В протоколе: поля `extra`, `extraIcon`, `showToggle`, `toggleLabel`, пакет клиента `input_extra {id, values}`, флаг `info` у `input_error`.
+
 ## Справочник
 
 - Темы: `dark, stone, success, error, warning, info, gold, ender, nether`; свои цвета: `accent, bg, outline, light, dark, title, text` (0xRRGGBB или 0xAARRGGBB), `shadow(bool)`.

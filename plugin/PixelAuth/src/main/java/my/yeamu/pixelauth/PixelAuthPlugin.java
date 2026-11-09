@@ -69,7 +69,7 @@ public final class PixelAuthPlugin extends JavaPlugin {
         }
 
         AuthCommands ac = new AuthCommands(this);
-        for (String c : new String[]{"login", "register", "logout", "changepassword"}) bind(c, ac);
+        for (String c : new String[]{"login", "register", "logout", "changepassword", "forgotpassword"}) bind(c, ac);
         bind("pixelauth", new AdminCommand(this));
 
         if (settings.hideCommands) {

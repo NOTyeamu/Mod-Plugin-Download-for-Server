@@ -25,7 +25,7 @@ import net.minecraft.client.MinecraftClient;
  * Сервер → клиент: notify, banner, banner_remove, menu, menu_close, prompt, prompt_cancel, clear,
  *                  input, input_error, input_close.
  * Клиент → сервер: hello {version}, click {menu, button}, close {menu}, answer {id, answer},
- *                  input_submit {id, values}, input_cancel {id}, input_closed {id}.
+ *                  input_submit {id, values}, input_extra {id, values}, input_cancel {id}, input_closed {id}.
  */
 public final class PixelNet {
 
@@ -104,6 +104,17 @@ public final class PixelNet {
         send(o);
     }
 
+    /** Нажата доп. кнопка окна ввода (например «Забыли пароль?»). */
+    public static void sendInputExtra(String id, java.util.List<String> values) {
+        JsonObject o = new JsonObject();
+        o.addProperty("type", "input_extra");
+        o.addProperty("id", id);
+        JsonArray arr = new JsonArray();
+        for (String v : values) arr.add(v);
+        o.add("values", arr);
+        send(o);
+    }
+
     public static void sendInputCancel(String id) {
         JsonObject o = new JsonObject();
         o.addProperty("type", "input_cancel");
@@ -167,13 +178,15 @@ public final class PixelNet {
                     client.setScreen(new InputScreen(f, true,
                             v -> sendInputSubmit(f.id, v),
                             () -> sendInputCancel(f.id),
-                            () -> sendInputClosed(f.id)));
+                            () -> sendInputClosed(f.id),
+                            v -> sendInputExtra(f.id, v)));
                 }
                 case "input_error" -> {
                     if (client.currentScreen instanceof InputScreen is && is.fromServer
                             && (!o.has("id") || is.form().id.equals(o.get("id").getAsString()))) {
-                        is.setError(o.has("error") ? o.get("error").getAsString() : "",
-                                !o.has("clear") || o.get("clear").getAsBoolean());
+                        is.setMessage(o.has("error") ? o.get("error").getAsString() : "",
+                                !o.has("clear") || o.get("clear").getAsBoolean(),
+                                o.has("info") && o.get("info").getAsBoolean());
                     }
                 }
                 case "input_close" -> {
