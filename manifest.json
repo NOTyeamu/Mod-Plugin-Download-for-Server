@@ -1,6 +1,6 @@
 {
-  "version": 3,
-  "generated": "2026-11-09T12:35:40Z",
+  "version": 4,
+  "generated": "2026-11-09T12:44:17Z",
   "format": 1,
   "minecraft": "1.21.11",
   "modsync": {
@@ -19,6 +19,16 @@
       "description": "Автообновление модов сервера"
     },
     {
+      "id": "pixelui",
+      "name": "PixelUI",
+      "version": "1.0.0",
+      "file": "PixelUI-1.0.0.jar",
+      "url": "https://yeamu.my.id/downloads/PixelUI-1.0.0.jar",
+      "sha256": "e35846c30bd0e4d1769ab42bf0141cf904d24a762bf8f891624c17855c8c2870",
+      "size": 47544,
+      "description": "Кастомные пиксельные уведомления, плашки и меню"
+    },
+    {
       "id": "fabric-api",
       "name": "Fabric API",
       "version": "0.141.6+1.21.11",
@@ -35,5 +45,5 @@
     }
   ],
   "optional": [],
-  "modsHash": "c74e17fdb53028bca8e236ad5c81ef364c25320960128a7a955d464bb2225737"
+  "modsHash": "28d58f85e3c2b7c65408c18c310076805b53e254bbd7741c57d47ad2867abaef"
 }
