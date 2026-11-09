@@ -1,6 +1,6 @@
 {
-  "version": 8,
-  "generated": "2026-11-09T16:01:36Z",
+  "version": 9,
+  "generated": "2026-11-09T16:28:13Z",
   "format": 1,
   "minecraft": "1.21.11",
   "plugins": [
@@ -37,11 +37,11 @@
     {
       "id": "pixelauth",
       "name": "PixelAuth",
-      "version": "1.1.1",
-      "file": "PixelAuth-1.1.1.jar",
-      "url": "https://yeamu.my.id/downloads/PixelAuth-1.1.1.jar",
-      "sha256": "b7f6e6b27e6754163e02f61aef7e463429939891bde7094059f27f71aefa1858",
-      "size": 82315,
+      "version": "1.1.2",
+      "file": "PixelAuth-1.1.2.jar",
+      "url": "https://yeamu.my.id/downloads/PixelAuth-1.1.2.jar",
+      "sha256": "8ba90255369911487341ae281bdd5d8aa6e29ff6ffce5bc0d349dde8ba2dfc36",
+      "size": 82339,
       "description": "Авторизация с пиксельными окнами (замена AuthMe)"
     }
   ],
