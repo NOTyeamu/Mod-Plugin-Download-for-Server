@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "modsync",
+  "version": "${version}",
+  "name": "ModSync",
+  "description": "Автоматически скачивает и обновляет моды сервера yeamu и проходит проверку ModGate.",
+  "authors": ["yeamu"],
+  "contact": {
+    "homepage": "https://yeamu.my.id",
+    "sources": "https://github.com/NOTyeamu/Mod-Plugin-Download-for-Server"
+  },
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["my.yeamu.modsync.ModSyncClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
