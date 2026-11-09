@@ -127,6 +127,8 @@ public final class PixelIcons {
                 ".kkkkkk."});
         // ещё ~150 иконок: интерфейс, предметы, блоки, мобы, природа
         PixelIconsSet.registerAll();
+        // и ещё ~100: мечи, штаны, броня, инструменты, еда, блоки, мобы
+        PixelIconsSet2.registerAll();
     }
 
     private PixelIcons() {}

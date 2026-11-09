@@ -38,6 +38,9 @@
     },
     {
       "file": "PixelUI-1.1.1.jar"
+    },
+    {
+      "file": "PixelUI-1.1.2.jar"
     }
   ],
   "optional": [],
@@ -67,6 +70,9 @@
   "pluginsRemove": [
     {
       "file": "PixelUI-Paper-1.1.0.jar"
+    },
+    {
+      "file": "PixelUI-Paper-1.1.1.jar"
     }
   ]
 }

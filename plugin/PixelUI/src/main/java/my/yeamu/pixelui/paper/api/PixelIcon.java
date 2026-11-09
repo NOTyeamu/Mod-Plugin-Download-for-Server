@@ -199,6 +199,122 @@ public final class PixelIcon {
     public static final String LEAF = "leaf";
     public static final String DROP = "drop";
 
+    // ---- Оружие, броня и инструменты (набор 2) ----
+    public static final String SWORD_WOOD = "sword_wood";
+    public static final String SWORD_STONE = "sword_stone";
+    public static final String SWORD_IRON = "sword_iron";
+    public static final String SWORD_GOLD = "sword_gold";
+    public static final String SWORD_DIAMOND = "sword_diamond";
+    public static final String SWORD_NETHERITE = "sword_netherite";
+    public static final String SWORD_MAGIC = "sword_magic";
+    public static final String PANTS = "pants";
+    public static final String LEGGINGS_LEATHER = "leggings_leather";
+    public static final String LEGGINGS_CHAIN = "leggings_chain";
+    public static final String LEGGINGS_IRON = "leggings_iron";
+    public static final String LEGGINGS_GOLD = "leggings_gold";
+    public static final String LEGGINGS_DIAMOND = "leggings_diamond";
+    public static final String LEGGINGS_NETHERITE = "leggings_netherite";
+    public static final String HELMET_LEATHER = "helmet_leather";
+    public static final String CHESTPLATE_LEATHER = "chestplate_leather";
+    public static final String BOOTS_LEATHER = "boots_leather";
+    public static final String HELMET_IRON = "helmet_iron";
+    public static final String CHESTPLATE_IRON = "chestplate_iron";
+    public static final String BOOTS_IRON = "boots_iron";
+    public static final String HELMET_GOLD = "helmet_gold";
+    public static final String CHESTPLATE_GOLD = "chestplate_gold";
+    public static final String BOOTS_GOLD = "boots_gold";
+    public static final String HELMET_NETHERITE = "helmet_netherite";
+    public static final String CHESTPLATE_NETHERITE = "chestplate_netherite";
+    public static final String BOOTS_NETHERITE = "boots_netherite";
+    public static final String PICKAXE_WOOD = "pickaxe_wood";
+    public static final String PICKAXE_STONE = "pickaxe_stone";
+    public static final String PICKAXE_IRON = "pickaxe_iron";
+    public static final String PICKAXE_GOLD = "pickaxe_gold";
+    public static final String PICKAXE_NETHERITE = "pickaxe_netherite";
+    public static final String AXE_GOLD = "axe_gold";
+    public static final String AXE_DIAMOND = "axe_diamond";
+    public static final String AXE_NETHERITE = "axe_netherite";
+    public static final String SHOVEL_GOLD = "shovel_gold";
+    public static final String SHOVEL_DIAMOND = "shovel_diamond";
+    public static final String HOE = "hoe";
+    public static final String HOE_DIAMOND = "hoe_diamond";
+    public static final String CROSSBOW = "crossbow";
+    public static final String MACE = "mace";
+    public static final String DAGGER = "dagger";
+    public static final String HAMMER = "hammer";
+    public static final String WAND = "wand";
+    public static final String STAFF = "staff";
+    public static final String SWORDS_CROSSED = "swords_crossed";
+
+    // ---- Еда (набор 2) ----
+    public static final String WATERMELON = "watermelon";
+    public static final String PUMPKIN = "pumpkin";
+    public static final String PUMPKIN_PIE = "pumpkin_pie";
+    public static final String POTATO = "potato";
+    public static final String BEETROOT = "beetroot";
+    public static final String BERRIES = "berries";
+    public static final String HONEY = "honey";
+    public static final String MILK = "milk";
+    public static final String GOLDEN_CARROT = "golden_carrot";
+    public static final String STEW = "stew";
+
+    // ---- Предметы (набор 2) ----
+    public static final String ENCHANTED_BOOK = "enchanted_book";
+    public static final String STRING = "string";
+    public static final String SLIMEBALL = "slimeball";
+    public static final String GUNPOWDER = "gunpowder";
+    public static final String BLAZE_ROD = "blaze_rod";
+    public static final String NAME_TAG = "name_tag";
+    public static final String PAPER = "paper";
+    public static final String SPYGLASS = "spyglass";
+    public static final String LANTERN = "lantern";
+    public static final String MUSIC_DISC = "music_disc";
+    public static final String FIREWORK = "firework";
+    public static final String SNOWBALL = "snowball";
+    public static final String SPAWN_EGG = "spawn_egg";
+    public static final String BOTTLE = "bottle";
+    public static final String SADDLE = "saddle";
+
+    // ---- Блоки (набор 2) ----
+    public static final String IRON_BLOCK = "iron_block";
+    public static final String GOLD_BLOCK = "gold_block";
+    public static final String DIAMOND_BLOCK = "diamond_block";
+    public static final String EMERALD_BLOCK = "emerald_block";
+    public static final String REDSTONE_BLOCK = "redstone_block";
+    public static final String LAPIS_BLOCK = "lapis_block";
+    public static final String NETHERRACK = "netherrack";
+    public static final String END_STONE = "end_stone";
+    public static final String GLOWSTONE = "glowstone";
+    public static final String SPONGE = "sponge";
+    public static final String BEACON = "beacon";
+    public static final String ANVIL = "anvil";
+    public static final String BOOKSHELF = "bookshelf";
+    public static final String HAY_BALE = "hay_bale";
+    public static final String MAGMA = "magma";
+
+    // ---- Мобы (набор 2) ----
+    public static final String RABBIT = "rabbit";
+    public static final String FOX = "fox";
+    public static final String PANDA = "panda";
+    public static final String FROG = "frog";
+    public static final String AXOLOTL = "axolotl";
+    public static final String SQUID = "squid";
+    public static final String WITCH = "witch";
+    public static final String IRON_GOLEM = "iron_golem";
+    public static final String PIGLIN = "piglin";
+    public static final String PHANTOM = "phantom";
+
+    // ---- Интерфейс (набор 2) ----
+    public static final String PLAY = "play";
+    public static final String PAUSE = "pause";
+    public static final String STOP = "stop";
+    public static final String CHECKBOX = "checkbox";
+    public static final String CHECKBOX_CHECKED = "checkbox_checked";
+    public static final String HEART_EMPTY = "heart_empty";
+    public static final String HEART_HALF = "heart_half";
+    public static final String STAR_EMPTY = "star_empty";
+    public static final String CROSSHAIR = "crosshair";
+
     private PixelIcon() {}
 
     @SuppressWarnings("deprecation")

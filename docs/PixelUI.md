@@ -7,7 +7,7 @@ PixelUI состоит из двух частей:
 | Клиентский мод (Fabric 1.21.11) | `PixelUI-1.1.0.jar` | ставится сам через ModSync |
 | Серверный плагин (Paper 1.21.11) | `PixelUI-Paper-1.1.0.jar` | `plugins/` |
 
-Мод рисует настоящий кастомный интерфейс: всплывающие уведомления (тосты), плашки и меню-экраны в пиксельном стиле.
+Мод рисуе�� настоящий кастомный интерфейс: всплывающие уведомления (тосты), плашки и меню-экраны в пиксельном стиле.
 Плагин даёт API другим плагинам. Если у игрока нет мода, плагин показывает запасной вариант (чат / actionbar / title / bossbar).
 
 ## Плагин: подключение
@@ -126,14 +126,14 @@ PixelUI.hasPrompt();
 ## Справочник
 
 - Темы: `dark, stone, success, error, warning, info, gold, ender, nether`; свои цвета: `accent, bg, outline, light, dark, title, text` (0xRRGGBB или 0xAARRGGBB), `shadow(bool)`.
-- Иконки: 179 встроенных пиксельных (см. «Встроенные иконки» ниже), `item:<id предмета>`, `none`.
+- Иконки: 283 встроенных пиксельных (см. «Встроенные иконки» ниже), `item:<id предмета>`, `none`.
 - Позиции: `TOP_LEFT, TOP_CENTER, TOP_RIGHT, CENTER, BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT`.
 - Стили кнопок: `default, primary, success, danger, info, gold` или свой цвет `color(0xRRGGBB)`.
 - Лимиты: 5 тостов в одном углу, 18 кнопок и 30 строк в меню, 1–3 столбца.
 
 ## Встроенные иконки
 
-Всего 179 иконок 8×8, нарисованных вручную. Используйте по имени: в моде `.icon("diamond")`, в плагине `.icon(PixelIcon.DIAMOND)`.
+Всего 283 иконок 8×8, нарисованных вручную. Используйте по имени: в моде `.icon("diamond")`, в плагине `.icon(PixelIcon.DIAMOND)`.
 Иконки с акцентным цветом (стрелки, шестерёнка, флаги и др.) сами перекрашиваются под тему уведомления.
 
 ![Иконки PixelUI](pixelui-icons.svg)
@@ -144,6 +144,12 @@ PixelUI.hasPrompt();
 - **Блоки:** `grass_block`, `dirt`, `stone`, `cobblestone`, `log`, `planks`, `sand`, `water`, `lava`, `ice`, `snow_block`, `leaves`, `glass`, `bricks`, `crafting_table`, `furnace`, `obsidian`, `portal`, `diamond_ore`, `gold_ore`, `bedrock`, `cactus`
 - **Мобы:** `creeper`, `zombie`, `skeleton`, `slime`, `pig`, `cow`, `chicken`, `sheep`, `spider`, `enderman`, `ghast`, `blaze`, `villager`, `steve`, `bee`, `cat`, `wolf`, `ghost`
 - **Природа и погода:** `sun`, `moon`, `cloud`, `rain`, `snow`, `lightning`, `tree`, `flower`, `mushroom`, `wheat`, `leaf`, `drop`
+- **Оружие, броня и инструменты:** `sword_wood`, `sword_stone`, `sword_iron`, `sword_gold`, `sword_diamond`, `sword_netherite`, `sword_magic`, `pants`, `leggings_leather`, `leggings_chain`, `leggings_iron`, `leggings_gold`, `leggings_diamond`, `leggings_netherite`, `helmet_leather`, `chestplate_leather`, `boots_leather`, `helmet_iron`, `chestplate_iron`, `boots_iron`, `helmet_gold`, `chestplate_gold`, `boots_gold`, `helmet_netherite`, `chestplate_netherite`, `boots_netherite`, `pickaxe_wood`, `pickaxe_stone`, `pickaxe_iron`, `pickaxe_gold`, `pickaxe_netherite`, `axe_gold`, `axe_diamond`, `axe_netherite`, `shovel_gold`, `shovel_diamond`, `hoe`, `hoe_diamond`, `crossbow`, `mace`, `dagger`, `hammer`, `wand`, `staff`, `swords_crossed`
+- **Еда:** `watermelon`, `pumpkin`, `pumpkin_pie`, `potato`, `beetroot`, `berries`, `honey`, `milk`, `golden_carrot`, `stew`
+- **Предметы (набор 2):** `enchanted_book`, `string`, `slimeball`, `gunpowder`, `blaze_rod`, `name_tag`, `paper`, `spyglass`, `lantern`, `music_disc`, `firework`, `snowball`, `spawn_egg`, `bottle`, `saddle`
+- **Блоки (набор 2):** `iron_block`, `gold_block`, `diamond_block`, `emerald_block`, `redstone_block`, `lapis_block`, `netherrack`, `end_stone`, `glowstone`, `sponge`, `beacon`, `anvil`, `bookshelf`, `hay_bale`, `magma`
+- **Мобы (набор 2):** `rabbit`, `fox`, `panda`, `frog`, `axolotl`, `squid`, `witch`, `iron_golem`, `piglin`, `phantom`
+- **Интерфейс (набор 2):** `play`, `pause`, `stop`, `checkbox`, `checkbox_checked`, `heart_empty`, `heart_half`, `star_empty`, `crosshair`
 
 Своя иконка — строки из символов палитры (`.` — пусто):
 `k` контур, `w` белый, `y` жёлтый, `o` оранжевый, `r` красный, `v` тёмно-красный, `g` зелёный, `e` тёмно-зелёный, `b` синий, `u` тёмно-синий, `c` голубой, `p` фиолетовый, `i` розовый, `n` коричневый, `t` бежевый, `s` серый, `h` светло-серый, `m` тёмно-серый, `a`/`d`/`l` акцент темы / темнее / светлее.
