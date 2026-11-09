@@ -1,6 +1,7 @@
 package my.yeamu.modsync;
 
 import my.yeamu.modsync.gui.GateOverlay;
+import my.yeamu.modsync.gui.StatusBadge;
 import my.yeamu.modsync.gui.SyncScreen;
 import my.yeamu.modsync.net.HandshakeSender;
 import my.yeamu.modsync.update.PendingOps;
@@ -12,8 +13,6 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 /**
@@ -40,13 +39,15 @@ public final class ModSyncClient implements ClientModInitializer {
         HudElementRegistry.addLast(Identifier.of("modsync", "gate"), GateOverlay::render);
         ClientTickEvents.END_CLIENT_TICK.register(GateOverlay::tick);
 
-        // Кнопка «Проверить обновления» в главном меню
+        // Плашка-статус ModSync в главном меню (нажать — проверить обновления).
+        // Место выбирается само на первом кадре, когда другие моды уже добавили свои кнопки, —
+        // так плашка не прячется за чужими кнопками.
         ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> {
             if (screen instanceof TitleScreen) {
-                Screens.getButtons(screen).add(ButtonWidget.builder(Text.literal("Проверить обновления"), b -> {
+                Screens.getButtons(screen).add(new StatusBadge(screen, () -> {
                     UpdateManager.get().startCheck();
                     client.setScreen(new SyncScreen(screen));
-                }).dimensions(4, 4, 140, 20).build());
+                }));
             }
         });
 

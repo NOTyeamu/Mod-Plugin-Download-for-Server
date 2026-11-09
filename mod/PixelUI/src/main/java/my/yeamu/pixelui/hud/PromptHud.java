@@ -30,6 +30,8 @@ import java.util.function.Consumer;
 public final class PromptHud {
 
     private static final long IN = 300, OUT = 240, PRESS_FLASH = 220, ARM_DELAY = 250;
+    /** Размер клавиши, отступ до подписи и промежуток между колонками «Да»/«Нет». */
+    private static final int KEY = 16, KEY_GAP = 5, COL_GAP = 18;
 
     private static final class Entry {
         Prompt p;
@@ -199,7 +201,12 @@ public final class PromptHud {
         boolean icon = Pixel.hasIcon(p.icon);
         int textX = icon ? 30 : 9;
         Text yesL = Pixel.text(p.yesLabel), noL = Pixel.text(p.noLabel);
-        int keysW = 16 + 4 + tr.getWidth(yesL) + 14 + 16 + 4 + tr.getWidth(noL);
+        // Каждая клавиша с подписью стоит по центру своей половины плашки: даже если «Да» короче
+        // «Нет», пара выглядит симметричной. У ширины текста убираем хвостовой пиксель-отступ.
+        int yesW = KEY + KEY_GAP + Math.max(0, tr.getWidth(yesL) - 1);
+        int noW = KEY + KEY_GAP + Math.max(0, tr.getWidth(noL) - 1);
+        int colW = Math.max(yesW, noW);
+        int keysW = colW * 2 + COL_GAP;
         int maxW = p.width > 0 ? p.width : 300;
         int wrap = maxW - textX - 9;
         List<OrderedText> q = p.question.isEmpty() ? List.of() : tr.wrapLines(Pixel.text(p.question), wrap);
@@ -217,7 +224,7 @@ public final class PromptHud {
         for (OrderedText o : lines) content = Math.max(content, tr.getWidth(o));
         int w = p.width > 0 ? p.width : Math.max(170, Math.min(textX + content + 9, maxW));
         int textH = q.size() * 10 + (!q.isEmpty() && !lines.isEmpty() ? 2 : 0) + lines.size() * 10;
-        int h = 7 + textH + 6 + 18 + 6 + (p.timerBar && p.timeoutMs > 0 ? 4 : 0);
+        int h = 7 + textH + 6 + 18 + 7 + (p.timerBar && p.timeoutMs > 0 ? 5 : 0);
 
         // --- позиция (верх — под плашками PixelHud)
         float target;
@@ -262,11 +269,12 @@ public final class PromptHud {
         int sepY = y + 7 + textH + 3;
         Pixel.separator(c, x + 6, x + w - 6, sepY, th, a);
         int ky = sepY + 5;
-        int kx = x + (w - keysW) / 2;
+        int cx = x + w / 2;
+        int yesX = cx - COL_GAP / 2 - colW + (colW - yesW) / 2;
+        int noX = cx + (COL_GAP - COL_GAP / 2) + (colW - noW) / 2;
         boolean flashYes = e.answer == PromptAnswer.YES, flashNo = e.answer == PromptAnswer.NO;
-        kx = keycap(c, tr, kx, ky, p.yesKey, yesL, p.yesColor, th, flashYes, e.answer != null && !flashYes, a);
-        kx += 14;
-        keycap(c, tr, kx, ky, p.noKey, noL, p.noColor, th, flashNo, e.answer != null && !flashNo, a);
+        keycap(c, tr, yesX, ky, p.yesKey, yesL, p.yesColor, th, flashYes, e.answer != null && !flashYes, a);
+        keycap(c, tr, noX, ky, p.noKey, noL, p.noColor, th, flashNo, e.answer != null && !flashNo, a);
 
         // --- таймер
         if (p.timerBar && p.timeoutMs > 0) {
@@ -297,7 +305,7 @@ public final class PromptHud {
         int base = dim ? Pixel.mix(color, 0xFF303030, 0.7f) : pressed ? Pixel.mix(color, 0xFFFFFFFF, 0.3f) : color;
         int depth = pressed ? 1 : 3;           // нажатая клавиша «проваливается»
         int top = y + (3 - depth);
-        int size = 16;
+        int size = KEY;
         // контур со срезанными углами
         int o = Pixel.alpha(0xFF000000, a);
         c.fill(x + 1, top, x + size - 1, top + 1, o);
@@ -311,12 +319,19 @@ public final class PromptHud {
         c.fill(x + 1, top + 1, x + size - 1, top + 2, Pixel.alpha(Pixel.mix(base, 0xFFFFFFFF, 0.4f), a));
         c.fill(x + 1, top + 2, x + 2, top + size - depth, Pixel.alpha(Pixel.mix(base, 0xFFFFFFFF, 0.2f), a));
         if (pressed) c.fill(x - 1, top - 1, x + size + 1, top, Pixel.alpha(0xFFFFFFFF, a * 0.8f));
+        // Буква ровно по центру верхней грани: считаем реальную ширину глифа (без отступа)
+        // плюс 1 пиксель тени; высота глифа 7 + 1 тень.
         String k = String.valueOf(key);
-        c.drawText(tr, k, x + (size - tr.getWidth(k)) / 2 + 1, top + (size - depth - 8) / 2 + 1,
-                Pixel.alpha(dim ? 0xFFA0A0A0 : 0xFFFFFFFF, a), true);
-        int lx = x + size + 4;
+        int faceW = size - 2, faceH = size - depth - 1;
+        int glyphW = Math.max(1, tr.getWidth(k) - 1) + 1;
+        int lxk = x + 1 + (faceW - glyphW + 1) / 2;
+        int lyk = top + 1 + (faceH - 8 + 1) / 2;
+        c.drawText(tr, k, lxk, lyk, Pixel.alpha(dim ? 0xFFA0A0A0 : 0xFFFFFFFF, a), true);
+        int lx = x + size + KEY_GAP;
         int lc = dim ? Pixel.mix(th.text(), 0xFF000000, 0.4f) : pressed ? 0xFFFFFFFF : th.title();
-        c.drawText(tr, label, lx, y + 5, Pixel.alpha(lc, a), th.shadow());
+        // Подпись на одной линии с буквой ненажатой клавиши (не прыгает при нажатии)
+        int labelY = y + 1 + (size - 3 - 1 - 8 + 1) / 2;
+        c.drawText(tr, label, lx, labelY, Pixel.alpha(lc, a), th.shadow());
         return lx + tr.getWidth(label);
     }
 }
