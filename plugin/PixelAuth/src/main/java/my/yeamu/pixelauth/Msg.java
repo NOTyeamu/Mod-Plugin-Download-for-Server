@@ -20,7 +20,10 @@ public final class Msg {
 
     /** Сырая строка с &amp;-кодами (для PixelUI). pairs: "name", "Steve", … */
     public String raw(String key, Object... pairs) {
-        return fill(cfg.getString("messages." + key, key), pairs);
+        // getString(path) без своего default смотрит и в config.yml из jar (setDefaults в reloadConfig),
+        // поэтому новые тексты работают даже со старым config.yml на сервере. Ключ — только если текста нет нигде.
+        String s = cfg.getString("messages." + key);
+        return fill(s == null ? key : s, pairs);
     }
 
     public List<String> rawList(String key, Object... pairs) {
