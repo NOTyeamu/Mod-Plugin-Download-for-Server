@@ -26,7 +26,9 @@ public record SyncConfig(
         int restartCountdown,
         String restartMethod,
         boolean notifyAdminsOnJoin,
-        boolean usePixelUI) {
+        boolean usePixelUI,
+        int parallelDownloads,
+        int batchWaitSeconds) {
 
     public enum Mode { AUTO, NOTIFY, OFF }
 
@@ -61,7 +63,9 @@ public record SyncConfig(
                 Math.max(5, c.getInt("restart.countdown", 60)),
                 c.getString("restart.method", "restart").toLowerCase(Locale.ROOT),
                 c.getBoolean("notify.admins-on-join", true),
-                c.getBoolean("notify.pixelui", true));
+                c.getBoolean("notify.pixelui", true),
+                Math.max(1, Math.min(16, c.getInt("download.parallel", 4))),
+                Math.max(0, Math.min(3600, c.getInt("restart.batch-wait-seconds", 90))));
     }
 
     /** Управляем ли мы этим плагином (с учётом managed/ignore). */

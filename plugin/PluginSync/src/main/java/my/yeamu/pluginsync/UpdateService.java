@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -83,6 +84,12 @@ public final class UpdateService {
 
     /** Версия и файл плагина, найденного в plugins/. */
     private record Installed(String name, String version, Path file) { }
+
+    /** Один плагин из пачки на скачивание. */
+    private record Job(PluginManifest.Entry entry, String key, String installedVersion, String installedFile, String what) { }
+
+    /** Шаг установки пачки — чтобы откатить, если что-то пошло не так. */
+    private record Undo(Path placed, Path staged, Path old, Path saved) { }
 
     private final PluginSyncPlugin plugin;
     private final Path pluginsDir;
@@ -188,6 +195,7 @@ public final class UpdateService {
         List<String> available = new ArrayList<>();
         List<String> failed = new ArrayList<>();
         List<String> removals = new ArrayList<>();
+        List<Job> jobs = new ArrayList<>();
         boolean fromCache = false;
         PluginManifest m;
         try {
@@ -249,21 +257,11 @@ public final class UpdateService {
                 result.put(key, new PluginState(e, iv, ifile, st, null));
                 continue;
             }
-            try {
-                download(cfg, e);
-                dropPending(key);
-                pending.put(key, new Pending(e.name(), e.version(), e.file(), ifile, e.sha256()));
-                downloaded.add(what);
-                log("СКАЧАН " + what + " (" + e.file() + ")");
-                result.put(key, new PluginState(e, iv, ifile, Status.PENDING, null));
-            } catch (Exception ex) {
-                String err = ex.getClass().getSimpleName() + ": " + ex.getMessage();
-                failed.add(e.name() + ": " + err);
-                log("ОШИБКА " + what + ": " + err);
-                plugin.getLogger().warning("Не удалось скачать " + e.name() + ": " + err);
-                result.put(key, new PluginState(e, iv, ifile, Status.ERROR, err));
-            }
+            // Не качаем сразу: сначала собираем всю пачку, потом качаем её целиком
+            jobs.add(new Job(e, key, iv, ifile, what));
+            result.put(key, new PluginState(e, iv, ifile, st, null));
         }
+        downloadAll(cfg, jobs, result, downloaded, failed);
 
         // Плагины, которые нужно удалить
         for (PluginManifest.RemoveRule r : m.remove()) {
@@ -290,6 +288,68 @@ public final class UpdateService {
         if (!fromCache) lastError = null;
         return new Report(true, fromCache ? lastError : null, m.version(), fromCache,
                 downloaded, available, failed, removals);
+    }
+
+    /**
+     * Скачать всю пачку параллельно (download.parallel потоков).
+     * В pending всё попадает разом — только когда вся пачка докачалась (удачно или с ошибкой).
+     */
+    private void downloadAll(SyncConfig cfg, List<Job> jobs, Map<String, PluginState> result,
+                             List<String> downloaded, List<String> failed) {
+        if (jobs.isEmpty()) return;
+        int threads = Math.max(1, Math.min(cfg.parallelDownloads(), jobs.size()));
+        ExecutorService pool = Executors.newFixedThreadPool(threads, r -> {
+            Thread t = new Thread(r, "PluginSync-download");
+            t.setDaemon(true);
+            return t;
+        });
+        log("ПАКЕТ: скачиваю " + jobs.size() + " шт. (" + threads + " одновременно)");
+        Map<Job, CompletableFuture<Void>> futures = new LinkedHashMap<>();
+        for (Job j : jobs) {
+            futures.put(j, CompletableFuture.runAsync(() -> {
+                try {
+                    download(cfg, j.entry());
+                } catch (Exception ex) {
+                    throw new CompletionException(ex);
+                }
+            }, pool));
+        }
+        Map<String, Pending> ready = new LinkedHashMap<>();
+        try {
+            for (Map.Entry<Job, CompletableFuture<Void>> f : futures.entrySet()) {
+                Job j = f.getKey();
+                PluginManifest.Entry e = j.entry();
+                try {
+                    f.getValue().join();
+                    ready.put(j.key(), new Pending(e.name(), e.version(), e.file(), j.installedFile(), e.sha256()));
+                    downloaded.add(j.what());
+                    log("СКАЧАН " + j.what() + " (" + e.file() + ")");
+                    result.put(j.key(), new PluginState(e, j.installedVersion(), j.installedFile(), Status.PENDING, null));
+                } catch (CompletionException | java.util.concurrent.CancellationException ce) {
+                    Throwable ex = ce.getCause() == null ? ce : ce.getCause();
+                    String err = ex.getClass().getSimpleName() + ": " + ex.getMessage();
+                    failed.add(e.name() + ": " + err);
+                    log("ОШИБКА " + j.what() + ": " + err);
+                    plugin.getLogger().warning("Не удалось скачать " + e.name() + ": " + err);
+                    result.put(j.key(), new PluginState(e, j.installedVersion(), j.installedFile(), Status.ERROR, err));
+                }
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+        // Вся пачка разом: старые скачанные версии заменяем новыми
+        for (Map.Entry<String, Pending> r : ready.entrySet()) {
+            Pending old = pending.remove(r.getKey());
+            if (old != null && old.newFile() != null && !old.newFile().equals(r.getValue().newFile())) {
+                try {
+                    Files.deleteIfExists(pendingDir.resolve(old.newFile()));
+                } catch (IOException ignored) { }
+            }
+            pending.put(r.getKey(), r.getValue());
+        }
+        if (!ready.isEmpty()) {
+            log("ПАКЕТ скачан: " + ready.size() + " из " + jobs.size());
+        }
     }
 
     // ------------------------------------------------------------------ сеть
@@ -479,7 +539,7 @@ public final class UpdateService {
         }
     }
 
-    private void log(String line) {
+    private synchronized void log(String line) {
         try {
             Files.createDirectories(logFile.getParent());
             Files.writeString(logFile, "[" + Instant.now() + "] " + line + System.lineSeparator(), StandardCharsets.UTF_8,
@@ -490,59 +550,126 @@ public final class UpdateService {
     // ------------------------------------------------------------------ применение при выключении
 
     /**
-     * Ставит скачанные jar в plugins/. Вызывается из onDisable при остановке сервера.
-     * Linux: старый jar удаляется, новый кладётся со своим именем (версия видна в имени файла).
-     * Windows (файл заблокирован): новый jar кладётся в папку update/ под именем старого —
-     * Paper сам заменит его при следующем запуске.
+     * Ставит ВСЕ скачанные jar в plugins/ одной пачкой. Вызывается из onDisable при остановке сервера.
+     * 1) Проверяем всю пачку (файлы на месте, SHA-256 совпадает). Хоть один битый — не ставим ничего.
+     * 2) Старые jar копируем в plugins/PluginSync/backup/<время>/.
+     * 3) Меняем файлы. Linux: старый jar удаляется, новый кладётся со своим именем.
+     *    Windows (файл заблокирован): новый jar идёт в папку update/ под именем старого — Paper заменит сам.
+     * 4) Ошибка посередине — откат всей пачки, сервер запустится со старыми версиями.
      */
     public void applyPending() {
         worker.shutdown();
+        // Если как раз идёт скачивание пачки — дождаться её целиком, а не ставить половину
+        int wait = Math.min(120, Math.max(10, plugin.syncConfig().timeoutSeconds() * 2));
         try {
-            worker.awaitTermination(5, TimeUnit.SECONDS); // дать докачать/записать pending.json
+            if (!worker.awaitTermination(wait, TimeUnit.SECONDS)) {
+                plugin.getLogger().warning("Скачивание не успело закончиться — ставлю только то, что было скачано целиком раньше");
+            }
         } catch (InterruptedException ignored) {
             Thread.currentThread().interrupt();
         }
         if (pending.isEmpty()) return;
+        List<Pending> batch = new ArrayList<>(pending.values());
+        batch.sort((a, b) -> a.name().compareToIgnoreCase(b.name()));
+
+        // 1. Проверка всей пачки до того, как что-то трогать
+        List<String> bad = new ArrayList<>();
+        for (Pending p : batch) {
+            if (p.newFile() == null) continue;
+            Path staged = pendingDir.resolve(p.newFile());
+            if (!Files.exists(staged) || (p.sha256() != null && !p.sha256().equals(sha256(staged)))) bad.add(p.name());
+        }
+        if (!bad.isEmpty()) {
+            for (String n : bad) dropPending(n.toLowerCase(Locale.ROOT));
+            savePending();
+            String m = "Пакет обновлений НЕ поставлен: повреждены или пропали " + String.join(", ", bad)
+                    + ". После запуска они скачаются заново, и вся пачка встанет при следующем перезапуске.";
+            plugin.getLogger().warning(m);
+            log("ПАКЕТ ОТЛОЖЕН: " + m);
+            return;
+        }
+
+        // 2–3. Резервная копия и замена
         Path updateDir = Bukkit.getUpdateFolderFile().toPath();
-        int ok = 0;
-        for (Pending p : new ArrayList<>(pending.values())) {
-            String key = p.name().toLowerCase(Locale.ROOT);
-            try {
+        Path backupRoot = plugin.getDataFolder().toPath().resolve("backup");
+        Path backup = backupRoot.resolve(String.valueOf(System.currentTimeMillis()));
+        List<Undo> undo = new ArrayList<>();
+        List<String> done = new ArrayList<>();
+        try {
+            Files.createDirectories(backup);
+            for (Pending p : batch) {
                 Path old = p.oldFile() == null ? null : pluginsDir.resolve(p.oldFile());
+                Path saved = null;
+                if (old != null && Files.exists(old)) {
+                    saved = backup.resolve(p.oldFile());
+                    Files.copy(old, saved, StandardCopyOption.REPLACE_EXISTING);
+                }
                 if (p.newFile() == null) {
                     // Удаление плагина
                     if (old != null) Files.deleteIfExists(old);
-                    log("УДАЛЁН " + p.name() + " (" + p.oldFile() + ")");
-                } else {
-                    Path staged = pendingDir.resolve(p.newFile());
-                    if (!Files.exists(staged)) {
-                        pending.remove(key);
-                        continue;
-                    }
-                    Path target = pluginsDir.resolve(p.newFile());
-                    boolean placed = false;
-                    try {
-                        if (old != null && !old.equals(target)) Files.deleteIfExists(old);
-                        move(staged, target);
-                        placed = true;
-                    } catch (IOException locked) {
-                        // Файл занят (Windows) — отдаём замену самому Paper через папку update/
-                        Files.createDirectories(updateDir);
-                        String name = old != null && Files.exists(old) ? p.oldFile() : p.newFile();
-                        move(staged, updateDir.resolve(name));
-                        log("Файл занят, " + p.name() + " положен в " + updateDir.getFileName() + "/" + name);
-                    }
-                    log("УСТАНОВЛЕН " + p.name() + " " + p.version() + (placed ? " (" + p.newFile() + ")" : " (через update/)"));
+                    undo.add(new Undo(null, null, old, saved));
+                    done.add(p.name() + " (удалён)");
+                    continue;
                 }
-                pending.remove(key);
-                ok++;
-            } catch (Exception e) {
-                plugin.getLogger().warning("Не удалось поставить " + p.name() + ": " + e.getMessage());
-                log("ОШИБКА установки " + p.name() + ": " + e.getMessage());
+                Path staged = pendingDir.resolve(p.newFile());
+                Path target = pluginsDir.resolve(p.newFile());
+                try {
+                    if (old != null && !old.equals(target)) Files.deleteIfExists(old);
+                    move(staged, target);
+                    undo.add(new Undo(target, staged, old, saved));
+                    done.add(p.name() + " " + p.version());
+                } catch (IOException locked) {
+                    // Файл занят (Windows) — отдаём замену самому Paper через папку update/
+                    if (!Files.exists(staged)) throw locked;
+                    Files.createDirectories(updateDir);
+                    String name = old != null && Files.exists(old) ? p.oldFile() : p.newFile();
+                    Path upd = updateDir.resolve(name);
+                    move(staged, upd);
+                    undo.add(new Undo(upd, staged, null, null));
+                    done.add(p.name() + " " + p.version() + " (через update/)");
+                }
             }
+        } catch (Exception e) {
+            // 4. Откат всей пачки в обратном порядке
+            for (int i = undo.size() - 1; i >= 0; i--) {
+                Undo u = undo.get(i);
+                try {
+                    if (u.placed() != null && Files.exists(u.placed())) {
+                        if (u.staged() != null) move(u.placed(), u.staged());
+                        else Files.deleteIfExists(u.placed());
+                    }
+                    if (u.saved() != null && u.old() != null && !Files.exists(u.old())) {
+                        Files.copy(u.saved(), u.old(), StandardCopyOption.REPLACE_EXISTING);
+                    }
+                } catch (IOException ignored) { }
+            }
+            plugin.getLogger().warning("Не удалось поставить пачку обновлений (" + e.getMessage()
+                    + "), всё откатено — сервер запустится со старыми версиями");
+            log("ПАКЕТ ОТКАЧЕН: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            return;
         }
+        pending.clear();
         savePending();
-        plugin.getLogger().info("Обновления поставлены: " + ok + ". Они заработают после запуска сервера.");
+        pruneBackups(backupRoot, 3);
+        log("ПАКЕТ УСТАНОВЛЕН (" + done.size() + "): " + String.join(", ", done));
+        plugin.getLogger().info("Пачка обновлений поставлена (" + done.size() + "): " + String.join(", ", done)
+                + ". Заработает после запуска сервера.");
+    }
+
+    /** Оставить только последние keep резервных копий. */
+    private static void pruneBackups(Path root, int keep) {
+        try (var s = Files.list(root)) {
+            List<Path> dirs = s.filter(Files::isDirectory).sorted().toList();
+            for (int i = 0; i < dirs.size() - keep; i++) {
+                try (var w = Files.walk(dirs.get(i))) {
+                    w.sorted(java.util.Comparator.reverseOrder()).forEach(x -> {
+                        try {
+                            Files.deleteIfExists(x);
+                        } catch (IOException ignored) { }
+                    });
+                }
+            }
+        } catch (IOException ignored) { }
     }
 
     /** Остановить фоновый поток без применения (например, при отключении плагина без остановки сервера). */

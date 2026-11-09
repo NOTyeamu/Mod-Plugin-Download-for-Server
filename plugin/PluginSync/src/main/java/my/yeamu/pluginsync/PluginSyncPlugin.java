@@ -27,6 +27,12 @@ public final class PluginSyncPlugin extends JavaPlugin {
     private RestartManager restarts;
     private BukkitTask timer;
     private boolean pixelUI;
+    /** Ожидание «не прилетит ли ещё обновлений» — чтобы поставить всё одной пачкой. */
+    private BukkitTask settleTask;
+    private int settleRounds;
+    private boolean settleForce;
+    private boolean batchOpen;
+    private static final int MAX_SETTLE_ROUNDS = 5;
 
     @Override
     public void onEnable() {
@@ -56,6 +62,7 @@ public final class PluginSyncPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         if (timer != null) timer.cancel();
+        if (settleTask != null) settleTask.cancel();
         if (restarts != null) restarts.cancel(false);
         if (updates == null) return;
         if (Bukkit.isStopping()) {
@@ -102,12 +109,15 @@ public final class PluginSyncPlugin extends JavaPlugin {
                 getLogger().warning("Ошибка проверки: " + err);
                 return;
             }
-            handleReport(sender, report, manual);
+            handleReport(sender, report, manual, forceDownload);
         }));
         return true;
     }
 
-    private void handleReport(CommandSender sender, UpdateService.Report r, boolean manual) {
+    /** Идёт ли сбор пачки (ждём, не появится ли ещё обновлений). */
+    public boolean isCollectingBatch() { return settleTask != null; }
+
+    private void handleReport(CommandSender sender, UpdateService.Report r, boolean manual, boolean force) {
         if (!r.ok()) {
             if (manual) msg(sender, "&cСписок плагинов недоступен: &f" + r.error());
             return;
@@ -124,14 +134,37 @@ public final class PluginSyncPlugin extends JavaPlugin {
         if (r.somethingNew()) {
             String list = String.join(", ", updates.pendingNames());
             getLogger().info("Скачано, ждёт перезапуска: " + list);
-            notifyAdmins("success", "Обновления скачаны", list + ". Поставятся при перезапуске.",
-                    "&6[PluginSync] &aСкачано: &f" + list + " &7— поставится при перезапуске (/pluginsync restart)");
+            notifyAdmins("success", "Обновления скачаны", list + ". Поставятся одной пачкой при перезапуске.",
+                    "&6[PluginSync] &aСкачано: &f" + list + " &7— поставится одной пачкой при перезапуске (/pluginsync restart)");
+        }
+        // Что-то скачали (��ли не докачали) — немного ждём и проверяем ещё раз:
+        // если на сайте за это время появятся ещё обновления, они попадут в ту же пачку и тот же перезапуск.
+        boolean changed = r.somethingNew() || (!r.failed().isEmpty() && updates.hasPending());
+        if (changed && config.batchWaitSeconds() > 0 && settleRounds < MAX_SETTLE_ROUNDS) {
+            settleRounds++;
+            settleForce |= force;
+            batchOpen = true;
+            if (settleTask != null) settleTask.cancel();
+            getLogger().info("Собираю пачку: перепроверю через " + config.batchWaitSeconds()
+                    + " с, вдруг на сайте появится ещё что-то");
+            settleTask = Bukkit.getScheduler().runTaskLater(this, () -> {
+                settleTask = null;
+                runCheck(Bukkit.getConsoleSender(), settleForce);
+            }, config.batchWaitSeconds() * 20L);
+            return;
+        }
+        boolean restartNow = (r.somethingNew() || batchOpen) && updates.hasPending();
+        batchOpen = false;
+        settleRounds = 0;
+        settleForce = false;
+        if (restartNow) {
+            getLogger().info("Пачка собрана: " + String.join(", ", updates.pendingNames()));
             if (config.restartWhen() == SyncConfig.RestartWhen.ALWAYS && !restarts.isRunning()) {
-                restarts.start(config.restartCountdown(), "скачаны обновления");
+                restarts.start(config.restartCountdown(), "скачана пачка обновлений");
             } else {
                 maybeRestart();
             }
-        } else if (manual && r.available().isEmpty() && r.failed().isEmpty()) {
+        } else if (manual && !r.somethingNew() && r.available().isEmpty() && r.failed().isEmpty()) {
             msg(sender, updates.hasPending()
                     ? "&bНового нет. Ждут перезапуска: &f" + String.join(", ", updates.pendingNames())
                     : "&aВсе плагины актуальны &7(список v" + r.manifestVersion() + ")");
@@ -141,7 +174,7 @@ public final class PluginSyncPlugin extends JavaPlugin {
     /** Режим restart.when: empty — перезапуск, когда на сервере никого нет и есть скачанное. */
     public void maybeRestart() {
         if (config.restartWhen() != SyncConfig.RestartWhen.EMPTY) return;
-        if (!updates.hasPending() || restarts.isRunning() || updates.isBusy()) return;
+        if (!updates.hasPending() || restarts.isRunning() || updates.isBusy() || settleTask != null) return;
         if (!Bukkit.getOnlinePlayers().isEmpty()) return;
         restarts.start(10, "сервер пуст, ставим обновления");
     }

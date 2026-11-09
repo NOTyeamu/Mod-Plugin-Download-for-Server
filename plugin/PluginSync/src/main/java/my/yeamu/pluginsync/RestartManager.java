@@ -15,6 +15,9 @@ public final class RestartManager {
     private final PluginSyncPlugin plugin;
     private BukkitTask task;
     private int left;
+    /** Последняя проверка перед перезапуском уже запущена. */
+    private boolean finalCheck;
+    private int waited;
 
     public RestartManager(PluginSyncPlugin plugin) {
         this.plugin = plugin;
@@ -31,6 +34,8 @@ public final class RestartManager {
     /** Запустить отсчёт. Если на сервере никого нет — перезапуск через пару секунд. */
     public void start(int seconds, String reason) {
         cancel(false);
+        finalCheck = false;
+        waited = 0;
         left = Bukkit.getOnlinePlayers().isEmpty() ? Math.min(seconds, 3) : seconds;
         plugin.getLogger().info("Перезапуск через " + left + " с: " + reason);
         task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 0L, 20L);
@@ -38,6 +43,14 @@ public final class RestartManager {
 
     private void tick() {
         if (left <= 0) {
+            // Перед самым перезапуском — ещё одна проверка, чтобы в пачку попало всё свежее с сайта
+            if (!finalCheck && plugin.syncConfig().mode() != SyncConfig.Mode.OFF) {
+                finalCheck = true;
+                plugin.updates().check(false);
+                return;
+            }
+            // Ждём, пока докачается вся пачка (не дольше 2 минут)
+            if (plugin.updates().isBusy() && waited++ < 120) return;
             task.cancel();
             task = null;
             doRestart();
