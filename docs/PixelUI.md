@@ -126,10 +126,27 @@ PixelUI.hasPrompt();
 ## Справочник
 
 - Темы: `dark, stone, success, error, warning, info, gold, ender, nether`; свои цвета: `accent, bg, outline, light, dark, title, text` (0xRRGGBB или 0xAARRGGBB), `shadow(bool)`.
-- Иконки: `info, check, cross, warn, star, heart, coin, bell, gift, sword, shield, clock`, `item:<id предмета>`, `none`.
+- Иконки: 179 встроенных пиксельных (см. «Встроенные иконки» ниже), `item:<id предмета>`, `none`.
 - Позиции: `TOP_LEFT, TOP_CENTER, TOP_RIGHT, CENTER, BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT`.
 - Стили кнопок: `default, primary, success, danger, info, gold` или свой цвет `color(0xRRGGBB)`.
 - Лимиты: 5 тостов в одном углу, 18 кнопок и 30 строк в меню, 1–3 столбца.
+
+## Встроенные иконки
+
+Всего 179 иконок 8×8, нарисованных вручную. Используйте по имени: в моде `.icon("diamond")`, в плагине `.icon(PixelIcon.DIAMOND)`.
+Иконки с акцентным цветом (стрелки, шестерёнка, флаги и др.) сами перекрашиваются под тему уведомления.
+
+![Иконки PixelUI](pixelui-icons.svg)
+
+- **Базовые:** `info`, `check`, `cross`, `warn`, `star`, `heart`, `coin`, `bell`, `gift`, `sword`, `shield`, `clock`
+- **Интерфейс и символы:** `home`, `gear`, `search`, `lock`, `unlock`, `key`, `user`, `users`, `chat`, `mail`, `plus`, `minus`, `arrow_up`, `arrow_down`, `arrow_left`, `arrow_right`, `refresh`, `download`, `upload`, `trash`, `pencil`, `eye`, `menu`, `question`, `exclamation`, `flag`, `pin`, `link`, `power`, `volume`, `mute`, `music`, `info_circle`, `bookmark`, `calendar`, `hourglass`, `wifi`, `ping`, `server`, `globe`, `battery`, `lightbulb`, `target`, `dice`, `puzzle`, `ticket`, `cart`, `bag`, `money`, `rocket`, `camera`, `party`, `sparkle`, `thumbs_up`, `thumbs_down`, `smile`, `sad`, `angry`, `crown`, `trophy`, `medal`, `level_up`, `skull`
+- **Предметы:** `pickaxe`, `axe`, `shovel`, `bow`, `arrow`, `trident`, `fishing_rod`, `potion`, `potion_red`, `potion_blue`, `potion_green`, `apple`, `golden_apple`, `bread`, `meat`, `cake`, `cookie`, `fish`, `carrot`, `diamond`, `emerald`, `gold_ingot`, `iron_ingot`, `redstone`, `lapis`, `coal`, `amethyst`, `netherite`, `book`, `scroll`, `bucket`, `torch`, `fire`, `tnt`, `bomb`, `ender_pearl`, `ender_eye`, `totem`, `egg`, `bone`, `feather`, `chest`, `ender_chest`, `helmet`, `chestplate`, `boots`, `elytra`, `compass`, `map`, `xp_orb`, `star_nether`, `shield_item`
+- **Блоки:** `grass_block`, `dirt`, `stone`, `cobblestone`, `log`, `planks`, `sand`, `water`, `lava`, `ice`, `snow_block`, `leaves`, `glass`, `bricks`, `crafting_table`, `furnace`, `obsidian`, `portal`, `diamond_ore`, `gold_ore`, `bedrock`, `cactus`
+- **Мобы:** `creeper`, `zombie`, `skeleton`, `slime`, `pig`, `cow`, `chicken`, `sheep`, `spider`, `enderman`, `ghast`, `blaze`, `villager`, `steve`, `bee`, `cat`, `wolf`, `ghost`
+- **Природа и погода:** `sun`, `moon`, `cloud`, `rain`, `snow`, `lightning`, `tree`, `flower`, `mushroom`, `wheat`, `leaf`, `drop`
+
+Своя иконка — строки из символов палитры (`.` — пусто):
+`k` контур, `w` белый, `y` жёлтый, `o` оранжевый, `r` красный, `v` тёмно-красный, `g` зелёный, `e` тёмно-зелёный, `b` синий, `u` тёмно-синий, `c` голубой, `p` фиолетовый, `i` розовый, `n` коричневый, `t` бежевый, `s` серый, `h` светло-серый, `m` тёмно-серый, `a`/`d`/`l` акцент темы / темнее / светлее.
 
 ## Клиентский мод: API для других модов
 

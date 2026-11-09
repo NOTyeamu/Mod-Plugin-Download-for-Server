@@ -8,6 +8,8 @@ import java.util.Map;
  * Набор пиксельных иконок 8×8, нарисованных символами.
  * Палитра: k — контур, w — белый, y — жёлтый, o — оранжевый, r — красный, g — зелёный,
  * b — синий, n — коричневый, s — серый, a — цвет акцента темы, d/l — акцент темнее/светлее.
+ * Дополнительно: p — фиолетовый, c — голубой, e — тёмно-зелёный, m — тёмно-серый,
+ * h — светло-серый, i — розовый, t — бежевый, u — тёмно-синий, v — тёмно-красный.
  * Свои иконки можно добавить через {@link #register(String, String[])}.
  */
 public final class PixelIcons {
@@ -123,6 +125,8 @@ public final class PixelIcons {
                 "kwwwwwwk",
                 "kswwwwsk",
                 ".kkkkkk."});
+        // ещё ~150 иконок: интерфейс, предметы, блоки, мобы, природа
+        PixelIconsSet.registerAll();
     }
 
     private PixelIcons() {}
@@ -147,6 +151,15 @@ public final class PixelIcons {
             case 'b' -> 0xFF3FA9FF;
             case 'n' -> 0xFF8A5A2B;
             case 's' -> 0xFF8B8B8B;
+            case 'p' -> 0xFFB14BFF; // фиолетовый
+            case 'c' -> 0xFF6FF2F2; // голубой (алмаз)
+            case 'e' -> 0xFF2E9B3A; // тёмно-зелёный
+            case 'm' -> 0xFF4A4A4A; // тёмно-серый
+            case 'h' -> 0xFFC6C6C6; // светло-серый
+            case 'i' -> 0xFFFF9AC8; // розовый
+            case 't' -> 0xFFD9A066; // бежевый (кожа, дерево)
+            case 'u' -> 0xFF2456B8; // тёмно-синий
+            case 'v' -> 0xFFA82828; // тёмно-красный
             case 'a' -> accent | 0xFF000000;
             case 'd' -> Pixel.mix(accent | 0xFF000000, 0xFF000000, 0.35f);
             case 'l' -> Pixel.mix(accent | 0xFF000000, 0xFFFFFFFF, 0.45f);
